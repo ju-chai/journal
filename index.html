@@ -256,7 +256,7 @@ body.editing .bucket-add-row{display:flex;}
 .bucket-add-submit{background:var(--rose);border:none;color:white;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:var(--sans);}
 
 /* ── MODALS ── */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(40,20,15,.55);z-index:200;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(40,20,15,.55);z-index:10000;align-items:center;justify-content:center;padding:1rem;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--ivory);border-radius:14px;padding:2rem;width:100%;max-width:480px;position:relative;max-height:90vh;overflow-y:auto;}
 .modal h3{font-family:var(--serif);font-size:26px;font-weight:300;margin-bottom:1.2rem;color:var(--walnut);}
@@ -670,681 +670,272 @@ footer p{font-size:12px;letter-spacing:.04em;}
 
 <script>
 'use strict';
-// ═══════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════
 //  GITHUB API
-// ═══════════════════════════════════════════════════════════════
-function ghCfg(){
+// ═══════════════════════════════════════════════════════
+function ghCfg() {
   return {
-    user:  localStorage.getItem('gh_user')   || '',
-    repo:  localStorage.getItem('gh_repo')   || '',
-    branch:localStorage.getItem('gh_branch') || 'main',
-    token: localStorage.getItem('gh_token')  || ''
+    user:   localStorage.getItem('gh_user')   || '',
+    repo:   localStorage.getItem('gh_repo')   || '',
+    branch: localStorage.getItem('gh_branch') || 'main',
+    token:  localStorage.getItem('gh_token')  || ''
   };
 }
-function ghReady(){ const c=ghCfg(); return !!(c.user&&c.repo&&c.token); }
+function ghReady() { const c = ghCfg(); return !!(c.user && c.repo && c.token); }
 
-function setSyncStatus(state, text){
-  const dot=document.getElementById('syncDot');
-  const lbl=document.getElementById('syncLabel');
-  dot.className=state; // 'ok','syncing','error'
-  lbl.textContent=text||'';
+function setSyncStatus(state, text) {
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLabel');
+  if (dot) dot.className = state;
+  if (lbl) lbl.textContent = text || '';
 }
 
-async function ghGet(path){
-  const c=ghCfg();
-  const r=await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/contents/${path}?ref=${c.branch}`,{
-    headers:{'Authorization':'token '+c.token,'Accept':'application/vnd.github.v3+json'}
+async function ghGet(path) {
+  const c = ghCfg();
+  const r = await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/contents/${path}?ref=${c.branch}`, {
+    headers: { 'Authorization': 'token ' + c.token, 'Accept': 'application/vnd.github.v3+json' }
   });
-  if(r.status===404) return null;
-  if(!r.ok) throw new Error('GitHub GET failed: '+r.status);
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('GitHub GET failed: ' + r.status);
   return r.json();
 }
 
-async function ghPut(path, content, message, sha){
-  const c=ghCfg();
-  const body={message, content:btoa(unescape(encodeURIComponent(content))), branch:c.branch};
-  if(sha) body.sha=sha;
-  const r=await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/contents/${path}`,{
-    method:'PUT',
-    headers:{'Authorization':'token '+c.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
-    body:JSON.stringify(body)
+async function ghPut(path, content, message, sha) {
+  const c = ghCfg();
+  const body = { message, content: btoa(unescape(encodeURIComponent(content))), branch: c.branch };
+  if (sha) body.sha = sha;
+  const r = await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/contents/${path}`, {
+    method: 'PUT',
+    headers: { 'Authorization': 'token ' + c.token, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
   });
-  if(!r.ok){const e=await r.json();throw new Error(e.message||'GitHub PUT failed');}
+  if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'GitHub PUT failed'); }
   return r.json();
 }
 
-async function ghPutBinary(path, base64Data, message, sha){
-  // base64Data is already a base64 string (without data:... prefix)
-  const c=ghCfg();
-  const body={message, content:base64Data, branch:c.branch};
-  if(sha) body.sha=sha;
-  const r=await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/contents/${path}`,{
-    method:'PUT',
-    headers:{'Authorization':'token '+c.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
-    body:JSON.stringify(body)
+async function ghPutBinary(path, base64Data, message, sha) {
+  const c = ghCfg();
+  const body = { message, content: base64Data, branch: c.branch };
+  if (sha) body.sha = sha;
+  const r = await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/contents/${path}`, {
+    method: 'PUT',
+    headers: { 'Authorization': 'token ' + c.token, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
   });
-  if(!r.ok){const e=await r.json();throw new Error(e.message||'GitHub PUT failed');}
+  if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'GitHub PUT failed'); }
   return r.json();
 }
 
 const DATA_PATH = 'data.json';
 
-async function ghLoadData(){
-  if(!ghReady()) return null;
-  try{
-    setSyncStatus('syncing','Loading…');
-    const file=await ghGet(DATA_PATH);
-    if(!file) return null;
-    const json=decodeURIComponent(escape(atob(file.content.replace(/\n/g,''))));
-    setSyncStatus('ok','Synced');
+async function ghLoadData() {
+  if (!ghReady()) return null;
+  try {
+    setSyncStatus('syncing', 'Loading…');
+    const file = await ghGet(DATA_PATH);
+    if (!file) return null;
+    const json = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+    setSyncStatus('ok', 'Synced');
     return JSON.parse(json);
-  }catch(e){
-    setSyncStatus('error','Offline');
-    console.warn('GitHub load failed:',e);
+  } catch(e) {
+    setSyncStatus('error', 'Offline');
     return null;
   }
 }
 
-async function ghSaveData(data){
-  if(!ghReady()){
+async function ghSaveData(data) {
+  if (!ghReady()) { lsSave('siteData', data); return; }
+  setSyncStatus('syncing', 'Saving…');
+  try {
+    const existing = await ghGet(DATA_PATH);
+    const sha = existing ? existing.sha : undefined;
+    await ghPut(DATA_PATH, JSON.stringify(data, null, 2), 'Update site data', sha);
     lsSave('siteData', data);
-    return;
-  }
-  setSyncStatus('syncing','Saving…');
-  try{
-    const existing=await ghGet(DATA_PATH);
-    const sha=existing?existing.sha:undefined;
-    const json=JSON.stringify(data, null, 2);
-    await ghPut(DATA_PATH, json, '💾 Update site data', sha);
-    lsSave('siteData', data); // keep local copy too
-    setSyncStatus('ok','Saved ✓');
-    setTimeout(()=>setSyncStatus('ok',''),2500);
-  }catch(e){
-    setSyncStatus('error','Save failed');
-    console.error('GitHub save failed:',e);
-    alert('Could not save to GitHub: '+e.message+'\n\nYour changes are saved locally as a backup.');
+    setSyncStatus('ok', 'Saved');
+    setTimeout(() => setSyncStatus('ok', ''), 2500);
+  } catch(e) {
+    setSyncStatus('error', 'Save failed');
+    alert('Could not save to GitHub: ' + e.message + '\n\nChanges saved locally as backup.');
     lsSave('siteData', data);
   }
 }
 
-async function ghSavePhoto(filename, base64data, caption, date, tag){
-  // base64data = dataURL like "data:image/jpeg;base64,/9j/..."
-  const b64=base64data.split(',')[1];
-  const path='images/'+filename;
-  if(!ghReady()) return {localOnly:true, dataUrl:base64data, id:Date.now()+Math.random(), caption, date, tag};
-  setSyncStatus('syncing','Uploading photo…');
-  try{
-    const existing=await ghGet(path);
-    const sha=existing?existing.sha:undefined;
-    await ghPutBinary(path, b64, '📸 Add photo: '+filename, sha);
-    const c=ghCfg();
-    // Return a GitHub raw URL so the image is served from GitHub
-    const url=`https://raw.githubusercontent.com/${c.user}/${c.repo}/${c.branch}/${path}`;
-    setSyncStatus('ok','Photo saved ✓');
-    return {id:Date.now()+Math.random(), url, caption, date, tag};
-  }catch(e){
-    setSyncStatus('error','Photo upload failed');
-    console.error(e);
-    alert('Photo upload failed: '+e.message+'\n\nSaving locally as fallback.');
-    return {id:Date.now()+Math.random(), dataUrl:base64data, caption, date, tag};
+async function ghSavePhoto(filename, base64data, caption, date, tag) {
+  const b64  = base64data.split(',')[1];
+  const path = 'images/' + filename;
+  if (!ghReady()) return { localOnly: true, dataUrl: base64data, id: Date.now() + Math.random(), caption, date, tag };
+  setSyncStatus('syncing', 'Uploading photo…');
+  try {
+    const existing = await ghGet(path);
+    const sha = existing ? existing.sha : undefined;
+    await ghPutBinary(path, b64, 'Add photo: ' + filename, sha);
+    const c = ghCfg();
+    const url = `https://raw.githubusercontent.com/${c.user}/${c.repo}/${c.branch}/${path}`;
+    setSyncStatus('ok', 'Photo saved');
+    return { id: Date.now() + Math.random(), url, caption, date, tag };
+  } catch(e) {
+    setSyncStatus('error', 'Upload failed');
+    alert('Photo upload failed: ' + e.message + '\n\nSaving locally as fallback.');
+    return { id: Date.now() + Math.random(), dataUrl: base64data, caption, date, tag };
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  LOCAL STORAGE HELPERS
-// ═══════════════════════════════════════════════════════════════
-function ls(key,fb){try{const v=localStorage.getItem(key);return v!==null?JSON.parse(v):fb;}catch{return fb;}}
-function lsSave(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){if(e.name==='QuotaExceededError')alert('Storage full!');}}
+// ═══════════════════════════════════════════════════════
+//  LOCAL STORAGE
+// ═══════════════════════════════════════════════════════
+function ls(key, fb) { try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fb; } catch { return fb; } }
+function lsSave(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { if (e.name === 'QuotaExceededError') alert('Storage full!'); } }
 
-// ═══════════════════════════════════════════════════════════════
-//  SITE DATA  (all content in one object, synced to data.json)
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+//  SITE DATA
+// ═══════════════════════════════════════════════════════
 const DEFAULT_DATA = {
-  texts:{},
-  anniversaryDate:'2023-06-14',
-  timeline:[
-    {id:1,date:'Edit this date',badge:'beginning',badgeLabel:'The beginning',title:'The day we met ♡',desc:'Write your story here — how you met, what happened, how you felt.',future:false},
-    {id:2,date:'Edit this date',badge:'moment',badgeLabel:'A moment',title:'First trip together',desc:'Describe your first adventure together. Where did you go? What made it unforgettable?',future:false},
-    {id:3,date:'Edit this date',badge:'milestone',badgeLabel:'Milestone',title:'One whole year ✨',desc:'Your first anniversary. What did you do? How did you celebrate?',future:false},
-    {id:4,date:'The next chapter',badge:'',badgeLabel:'Coming soon',title:'Still being written…',desc:'This story isn\'t finished. Add new entries as you make more memories together.',future:true},
+  texts: {},
+  anniversaryDate: '2023-06-14',
+  timeline: [
+    { id:1, date:'Edit this date', badge:'beginning', badgeLabel:'The beginning', title:'The day we met', desc:'Write your story here — how you met, what happened, how you felt.', future:false },
+    { id:2, date:'Edit this date', badge:'moment',    badgeLabel:'A moment',      title:'First trip together', desc:'Describe your first adventure. Where did you go?', future:false },
+    { id:3, date:'Edit this date', badge:'milestone', badgeLabel:'Milestone',     title:'One whole year', desc:'Your first anniversary. What did you do?', future:false },
+    { id:4, date:'The next chapter', badge:'', badgeLabel:'Coming soon', title:'Still being written…', desc:"This story isn't finished. Add new entries as you make more memories.", future:true },
   ],
-  notes:[
-    {id:1,tag:'To her',text:'I love the way you laugh at your own jokes before you even finish telling them.',from:'you',date:'Edit this date'},
-    {id:2,tag:'To him',text:'Thank you for always knowing when I need silence and when I need you to talk to me.',from:'her',date:'Edit this date'},
-    {id:3,tag:'To us',text:'I never thought a regular Tuesday could be my favorite day. Then I started spending them with you.',from:'both of us',date:'A Tuesday'},
+  notes: [
+    { id:1, tag:'To her', text:'I love the way you laugh at your own jokes before you even finish telling them.', from:'you',        date:'Edit this date' },
+    { id:2, tag:'To him', text:'Thank you for always knowing when I need silence and when I need you to talk to me.', from:'her',   date:'Edit this date' },
+    { id:3, tag:'To us',  text:"I never thought a regular Tuesday could be my favorite day. Then I started spending them with you.", from:'both of us', date:'A Tuesday' },
   ],
-  bucket:{
-    travel:[
-      {id:1,text:'Watch a sunset on the beach together',done:true},
-      {id:2,text:'Take a spontaneous overnight trip',done:false},
-      {id:3,text:'Get lost in a new city with no plan',done:false},
-      {id:4,text:'See the northern lights',done:false},
-      {id:5,text:'Go on a train journey through the mountains',done:false},
-      {id:6,text:'Stay in a tiny cabin in the middle of nowhere',done:false},
+  bucket: {
+    travel: [
+      { id:1, text:'Watch a sunset on the beach together', done:true  },
+      { id:2, text:'Take a spontaneous overnight trip',    done:false },
+      { id:3, text:'Get lost in a new city with no plan', done:false },
+      { id:4, text:'See the northern lights',             done:false },
+      { id:5, text:'Go on a train journey through the mountains', done:false },
+      { id:6, text:'Stay in a tiny cabin in the middle of nowhere', done:false },
     ],
-    experiences:[
-      {id:7,text:'Cook a fancy 3-course dinner at home',done:true},
-      {id:8,text:'Watch all our favorite childhood movies',done:true},
-      {id:9,text:'Take a dance class even if we\'re terrible',done:false},
-      {id:10,text:'Write letters to our future selves to open in 5 years',done:false},
-      {id:11,text:'Go stargazing far from the city lights',done:false},
-      {id:12,text:'Plant something together and watch it grow',done:false},
+    experiences: [
+      { id:7,  text:'Cook a fancy 3-course dinner at home',          done:true  },
+      { id:8,  text:'Watch all our favorite childhood movies',        done:true  },
+      { id:9,  text:'Take a dance class even if we are terrible',     done:false },
+      { id:10, text:'Write letters to our future selves',             done:false },
+      { id:11, text:'Go stargazing far from the city lights',         done:false },
+      { id:12, text:'Plant something together and watch it grow',     done:false },
     ]
   },
-  photos:[] // [{id, url OR dataUrl, caption, date, tag}]
+  photos: []
 };
 
-let D = ls('siteData', DEFAULT_DATA); // working copy
-
-// Merge missing keys from defaults
-function mergeDefaults(obj, def){
-  for(const k in def){ if(!(k in obj)) obj[k]=def[k]; }
-  return obj;
-}
+let D = ls('siteData', DEFAULT_DATA);
+function mergeDefaults(obj, def) { for (const k in def) { if (!(k in obj)) obj[k] = def[k]; } return obj; }
 D = mergeDefaults(D, DEFAULT_DATA);
 
-// ═══════════════════════════════════════════════════════════════
-//  INIT: load from GitHub, then apply to page
-// ═══════════════════════════════════════════════════════════════
-async function init(){
-  if(ghReady()){
-    const remote = await ghLoadData();
-    if(remote){
-      D = mergeDefaults(remote, DEFAULT_DATA);
-      lsSave('siteData', D);
+// ═══════════════════════════════════════════════════════
+//  LOCK SCREEN
+// ═══════════════════════════════════════════════════════
+const PASS_KEY    = 'us_always_pass';
+const SESSION_KEY = 'us_always_session';
+const SETUP_KEY   = 'us_always_setup_done';
+
+async function hashPass(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str + 'us_always_salt_xo'));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function isUnlocked()   { return sessionStorage.getItem(SESSION_KEY) === 'yes'; }
+function wIsSetupDone() { return !!localStorage.getItem(SETUP_KEY); }
+
+function unlockSite() {
+  sessionStorage.setItem(SESSION_KEY, 'yes');
+  const ls = document.getElementById('lockScreen');
+  if (ls) {
+    ls.classList.add('unlocked');
+    setTimeout(() => { if (ls.parentNode) ls.parentNode.removeChild(ls); }, 700);
+  }
+  init();
+  if (!wIsSetupDone()) setTimeout(() => wOpen(), 900);
+}
+
+// Petals on lock screen
+(function spawnLockPetals() {
+  const lp = document.getElementById('lockPetals');
+  if (!lp) return;
+  for (let i = 0; i < 14; i++) {
+    const p = document.createElement('div'); p.className = 'petal';
+    p.style.cssText = 'left:' + (Math.random()*100) + '%;width:' + (5+Math.random()*5) + 'px;height:' + (5+Math.random()*5) + 'px;animation-duration:' + (9+Math.random()*10) + 's;animation-delay:' + (Math.random()*14) + 's;';
+    lp.appendChild(p);
+  }
+})();
+
+// ── Set / Change password modal ──
+document.getElementById('cancelSetPass').addEventListener('click', () => {
+  document.getElementById('setPasswordModal').classList.remove('open');
+});
+
+document.getElementById('confirmSetPass').addEventListener('click', async () => {
+  const p1  = document.getElementById('newPass1').value;
+  const p2  = document.getElementById('newPass2').value;
+  const err = document.getElementById('setPassError');
+  if (!p1)           { err.textContent = 'Please enter a password.';      return; }
+  if (p1.length < 4) { err.textContent = 'At least 4 characters please.'; return; }
+  if (p1 !== p2)     { err.textContent = "Passwords don't match.";         return; }
+  localStorage.setItem(PASS_KEY, await hashPass(p1));
+  err.textContent = '';
+  document.getElementById('newPass1').value = '';
+  document.getElementById('newPass2').value = '';
+  document.getElementById('setPasswordModal').classList.remove('open');
+  unlockSite();
+});
+
+// ── Main lock logic ──
+if (isUnlocked()) {
+  unlockSite();
+} else {
+  const hasPass = !!localStorage.getItem(PASS_KEY);
+  if (!hasPass) {
+    // First visit — hide login fields, open set-password modal directly
+    document.getElementById('lockBtn').style.display    = 'none';
+    document.getElementById('lockInput').style.display  = 'none';
+    document.getElementById('lockToggle').style.display = 'none';
+    document.getElementById('setPasswordModal').classList.add('open');
+  }
+
+  async function tryUnlock() {
+    const val = document.getElementById('lockInput').value;
+    if (!val) return;
+    const hashed = await hashPass(val);
+    if (hashed === localStorage.getItem(PASS_KEY)) {
+      unlockSite();
+    } else {
+      const inp = document.getElementById('lockInput');
+      inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake');
+      document.getElementById('lockError').textContent = 'Wrong password — try again';
+      inp.value = ''; inp.focus();
     }
-  } else {
-    setSyncStatus('ok','');
   }
-  applyTexts();
-  renderTimeline();
-  renderBucket();
-  renderNotes();
-  renderGallery();
-  // Anniversary
-  const annDate = D.anniversaryDate || '2023-06-14';
-  document.getElementById('anniversaryDateInput').value = annDate;
-  ANNIVERSARY = new Date(annDate+'T00:00:00');
-  updateCounter();
-}
 
-// ═══════════════════════════════════════════════════════════════
-//  SETTINGS PANEL
-// ═══════════════════════════════════════════════════════════════
-const settingsPanel = document.getElementById('settingsPanel');
-document.getElementById('settingsBtn').addEventListener('click', e=>{
-  e.stopPropagation();
-  settingsPanel.classList.toggle('open');
-  if(settingsPanel.classList.contains('open')){
-    document.getElementById('ghUser').value   = localStorage.getItem('gh_user')   || '';
-    document.getElementById('ghRepo').value   = localStorage.getItem('gh_repo')   || '';
-    document.getElementById('ghBranch').value = localStorage.getItem('gh_branch') || 'main';
-    document.getElementById('ghToken').value  = localStorage.getItem('gh_token')  || '';
-    document.getElementById('settingsStatus').className='settings-status';
-    document.getElementById('settingsStatus').textContent='';
-  }
-});
-document.getElementById('settingsCancel').addEventListener('click',()=>settingsPanel.classList.remove('open'));
-document.addEventListener('click',e=>{ if(!settingsPanel.contains(e.target)&&e.target.id!=='settingsBtn') settingsPanel.classList.remove('open'); });
-
-document.getElementById('settingsSave').addEventListener('click', ()=>{
-  // Open the setup wizard for re-configuration
-  localStorage.removeItem('us_always_setup_done');
-  document.getElementById('settingsPanel').classList.remove('open');
-  wGoTo(0);
-  wOpen();
-});
-document.getElementById('settingsSave_UNUSED').addEventListener('click', async()=>{
-  const user   = document.getElementById('ghUser').value.trim();
-  const repo   = document.getElementById('ghRepo').value.trim();
-  const branch = document.getElementById('ghBranch').value.trim() || 'main';
-  const token  = document.getElementById('ghToken').value.trim();
-  const status = document.getElementById('settingsStatus');
-  if(!user||!repo||!token){ status.className='settings-status err'; status.textContent='Please fill in all fields.'; return; }
-  status.className='settings-status'; status.textContent='Testing connection…';
-  // Test: fetch repo info
-  try{
-    const r=await fetch(`https://api.github.com/repos/${user}/${repo}`,{
-      headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}
-    });
-    if(r.status===404) throw new Error('Repo not found. Check the name and that your token has access.');
-    if(r.status===401) throw new Error('Token is invalid or expired.');
-    if(!r.ok) throw new Error('GitHub returned '+r.status);
-    localStorage.setItem('gh_user',user);
-    localStorage.setItem('gh_repo',repo);
-    localStorage.setItem('gh_branch',branch);
-    localStorage.setItem('gh_token',token);
-    status.className='settings-status ok';
-    status.textContent='✓ Connected! Your edits will now sync to GitHub.';
-    setSyncStatus('ok','Connected');
-    // Push current local data to GitHub immediately
-    await ghSaveData(D);
-  }catch(e){
-    status.className='settings-status err';
-    status.textContent='✗ '+e.message;
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════
-//  COUNTER
-// ═══════════════════════════════════════════════════════════════
-let ANNIVERSARY = new Date((D.anniversaryDate||'2023-06-14')+'T00:00:00');
-function updateCounter(){
-  const diff=Date.now()-ANNIVERSARY.getTime();
-  if(diff<0)return;
-  const totalHours=Math.floor(diff/3600000), totalDays=Math.floor(totalHours/24);
-  document.getElementById('cnt-years').textContent  = Math.floor(totalDays/365.25);
-  document.getElementById('cnt-months').textContent = Math.floor((totalDays%365.25)/30.44);
-  document.getElementById('cnt-days').textContent   = Math.floor(totalDays%30.44);
-  document.getElementById('cnt-hours').textContent  = totalHours%24;
-}
-setInterval(updateCounter,60000);
-
-document.getElementById('anniversaryDateInput').addEventListener('change',async function(){
-  const d=new Date(this.value+'T00:00:00');
-  if(isNaN(d))return;
-  ANNIVERSARY=d; D.anniversaryDate=this.value;
-  updateCounter();
-  await ghSaveData(D);
-});
-
-// ═══════════════════════════════════════════════════════════════
-//  PETALS
-// ═══════════════════════════════════════════════════════════════
-const pc=document.getElementById('petals');
-for(let i=0;i<18;i++){
-  const p=document.createElement('div'); p.className='petal';
-  p.style.cssText=`left:${Math.random()*100}%;width:${5+Math.random()*6}px;height:${5+Math.random()*6}px;animation-duration:${8+Math.random()*10}s;animation-delay:${Math.random()*12}s;`;
-  pc.appendChild(p);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  NAV
-// ═══════════════════════════════════════════════════════════════
-const navToggle=document.getElementById('navToggle');
-const navLinks=document.getElementById('navLinks');
-navToggle.addEventListener('click',()=>navLinks.classList.toggle('open'));
-function closeNav(){navLinks.classList.remove('open');}
-
-// ═══════════════════════════════════════════════════════════════
-//  INLINE TEXT EDITING
-// ═══════════════════════════════════════════════════════════════
-let editMode=false;
-const editToggle=document.getElementById('editToggle');
-
-function applyTexts(){
-  document.querySelectorAll('[data-key]').forEach(el=>{
-    const val=D.texts[el.dataset.key];
-    if(val!==undefined) el.textContent=val;
+  document.getElementById('lockBtn').addEventListener('click', tryUnlock);
+  document.getElementById('lockInput').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+  document.getElementById('lockToggle').addEventListener('click', () => {
+    const inp = document.getElementById('lockInput');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  });
+  document.getElementById('lockSetupLink').addEventListener('click', () => {
+    document.getElementById('setPasswordModal').classList.add('open');
   });
 }
 
-function collectTexts(){
-  document.querySelectorAll('[data-key]').forEach(el=>{
-    D.texts[el.dataset.key]=el.textContent;
-  });
-}
-
-function setEditables(on){
-  document.querySelectorAll('[data-editable]').forEach(el=>{
-    el.contentEditable=on?'true':'false';
-    if(el.tagName==='A') el.style.pointerEvents=on?'none':'';
-  });
-}
-
-function setEditMode(on){
-  editMode=on;
-  document.body.classList.toggle('editing',on);
-  editToggle.classList.toggle('active',on);
-  editToggle.innerHTML=on
-    ? `<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.5 12.75l6 6 9-13.5"/></svg> Done`
-    : `<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg> Edit`;
-  setEditables(on);
-  if(!on){
-    collectTexts();
-    collectTimelineEdits();
-    collectBucketEdits();
-    collectNoteEdits();
-    ghSaveData(D);
-  }
-}
-
-editToggle.addEventListener('click',()=>setEditMode(!editMode));
-
-document.addEventListener('keydown',e=>{
-  if(editMode&&e.key==='Enter'&&e.target.hasAttribute('data-editable')){
-    e.preventDefault(); e.target.blur();
-    collectTexts(); // auto-save text on Enter
-  }
-});
-
-function reapplyEditables(){
-  if(editMode) setEditables(true);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  TIMELINE
-// ═══════════════════════════════════════════════════════════════
-function renderTimeline(){
-  const list=document.getElementById('timelineList');
-  list.innerHTML='';
-  D.timeline.forEach(item=>{
-    const div=document.createElement('div');
-    div.className='tl-item'; div.dataset.id=item.id;
-    const badge=item.badgeLabel?`<span class="tl-badge ${item.badge==='milestone'?'milestone':''}" data-editable data-key="tlBadge_${item.id}">${item.badgeLabel}</span>`:'';
-    div.innerHTML=`
-      <div class="tl-dot ${item.future?'future':''}"></div>
-      ${badge}
-      <p class="tl-year" data-editable data-key="tlDate_${item.id}">${item.date}</p>
-      <h3 class="tl-title" data-editable data-key="tlTitle_${item.id}">${item.title}</h3>
-      <p class="tl-desc" data-editable="block" data-key="tlDesc_${item.id}">${item.desc}</p>
-      <button class="tl-remove edit-ctrl" onclick="removeTlItem(${item.id})">✕ remove</button>`;
-    list.appendChild(div);
-  });
-  applyTexts(); reapplyEditables();
-}
-
-function collectTimelineEdits(){
-  D.timeline.forEach(item=>{
-    ['tlDate_','tlTitle_','tlDesc_','tlBadge_'].forEach(pfx=>{
-      const el=document.querySelector(`[data-key="${pfx}${item.id}"]`);
-      if(!el) return;
-      if(pfx==='tlDate_')   item.date       =el.textContent;
-      if(pfx==='tlTitle_')  item.title      =el.textContent;
-      if(pfx==='tlDesc_')   item.desc       =el.textContent;
-      if(pfx==='tlBadge_')  item.badgeLabel =el.textContent;
-    });
-  });
-}
-
-function removeTlItem(id){
-  if(!confirm('Remove this milestone?'))return;
-  D.timeline=D.timeline.filter(i=>i.id!==id);
-  renderTimeline();
-  ghSaveData(D);
-}
-
-const tlModal=document.getElementById('tlModal');
-document.getElementById('addTlBtn').addEventListener('click',()=>tlModal.classList.add('open'));
-document.getElementById('closeTlModal').addEventListener('click',()=>tlModal.classList.remove('open'));
-document.getElementById('cancelTl').addEventListener('click',()=>tlModal.classList.remove('open'));
-tlModal.addEventListener('click',e=>{if(e.target===tlModal)tlModal.classList.remove('open');});
-document.getElementById('saveTl').addEventListener('click',async()=>{
-  const title=document.getElementById('tlTitle').value.trim();
-  if(!title)return;
-  const badgeMap={milestone:'Milestone',moment:'A moment',growing:'Growing together',beginning:'The beginning'};
-  const bk=document.getElementById('tlBadge').value;
-  const item={id:Date.now(),date:document.getElementById('tlDate').value.trim()||'A moment in time',badge:bk,badgeLabel:badgeMap[bk]||'',title,desc:document.getElementById('tlDesc').value.trim(),future:false};
-  const fi=D.timeline.findIndex(i=>i.future);
-  if(fi>=0) D.timeline.splice(fi,0,item); else D.timeline.push(item);
-  renderTimeline();
-  ['tlDate','tlTitle','tlDesc'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('tlBadge').value='';
-  tlModal.classList.remove('open');
-  await ghSaveData(D);
-});
-
-// ═══════════════════════════════════════════════════════════════
-//  BUCKET LIST
-// ═══════════════════════════════════════════════════════════════
-function renderBucket(){
-  ['travel','experiences'].forEach(cat=>{
-    const el=document.getElementById('bucket-'+cat);
-    el.innerHTML='';
-    D.bucket[cat].forEach(item=>{
-      const div=document.createElement('div');
-      div.className='bucket-item'+(item.done?' done':''); div.dataset.id=item.id;
-      div.innerHTML=`<div class="bucket-check" onclick="toggleBucket(this)"></div>
-        <span class="bucket-text" data-editable="block" data-key="bucket_${item.id}">${item.text}</span>
-        <button class="bucket-remove edit-ctrl" onclick="removeBucketItem('${cat}',${item.id})">✕</button>`;
-      el.appendChild(div);
-    });
-  });
-  applyTexts(); reapplyEditables();
-}
-
-function collectBucketEdits(){
-  ['travel','experiences'].forEach(cat=>{
-    D.bucket[cat].forEach(item=>{
-      const el=document.querySelector(`[data-key="bucket_${item.id}"]`);
-      if(el) item.text=el.textContent;
-      const row=document.querySelector(`#bucket-${cat} [data-id="${item.id}"]`);
-      if(row) item.done=row.classList.contains('done');
-    });
-  });
-}
-
-function toggleBucket(checkEl){
-  const row=checkEl.closest('.bucket-item');
-  row.classList.toggle('done');
-  const id=parseInt(row.dataset.id);
-  ['travel','experiences'].forEach(cat=>{
-    const f=D.bucket[cat].find(i=>i.id===id);
-    if(f) f.done=row.classList.contains('done');
-  });
-  ghSaveData(D);
-}
-
-function removeBucketItem(cat,id){
-  D.bucket[cat]=D.bucket[cat].filter(i=>i.id!==id);
-  renderBucket(); ghSaveData(D);
-}
-
-function addBucketItem(cat,inputId){
-  const input=document.getElementById(inputId);
-  const text=input.value.trim(); if(!text)return;
-  D.bucket[cat].push({id:Date.now(),text,done:false});
-  renderBucket(); input.value='';
-  reapplyEditables(); ghSaveData(D);
-}
-
-['addTravel','addExp'].forEach(id=>{
-  document.getElementById(id).addEventListener('keydown',e=>{
-    if(e.key==='Enter'){e.preventDefault();addBucketItem(id==='addTravel'?'travel':'experiences',id);}
-  });
-});
-
-// ═══════════════════════════════════════════════════════════════
-//  LOVE NOTES
-// ═══════════════════════════════════════════════════════════════
-function renderNotes(){
-  const grid=document.getElementById('notesGrid'); grid.innerHTML='';
-  D.notes.forEach(note=>{
-    const card=document.createElement('div'); card.className='note-card'; card.dataset.id=note.id;
-    card.innerHTML=`<button class="note-remove" onclick="removeNote(${note.id})">✕</button>
-      <span class="note-tag" data-editable data-key="noteTag_${note.id}">${note.tag}</span>
-      <p class="note-text" data-editable="block" data-key="noteText_${note.id}">${note.text}</p>
-      <div class="note-from"><span>from <strong data-editable data-key="noteFrom_${note.id}">${note.from}</strong></span>
-      <span data-editable data-key="noteDate_${note.id}">${note.date}</span></div>`;
-    grid.appendChild(card);
-  });
-  applyTexts(); reapplyEditables();
-}
-
-function collectNoteEdits(){
-  D.notes.forEach(note=>{
-    const t=document.querySelector(`[data-key="noteText_${note.id}"]`);
-    const g=document.querySelector(`[data-key="noteTag_${note.id}"]`);
-    const f=document.querySelector(`[data-key="noteFrom_${note.id}"]`);
-    const d=document.querySelector(`[data-key="noteDate_${note.id}"]`);
-    if(t) note.text=t.textContent;
-    if(g) note.tag =g.textContent;
-    if(f) note.from=f.textContent;
-    if(d) note.date=d.textContent;
-  });
-}
-
-function removeNote(id){
-  if(!confirm('Delete this note?'))return;
-  D.notes=D.notes.filter(n=>n.id!==id);
-  renderNotes(); ghSaveData(D);
-}
-
-const noteModal=document.getElementById('noteModal');
-document.getElementById('openNoteModal').addEventListener('click',()=>noteModal.classList.add('open'));
-document.getElementById('closeNoteModal').addEventListener('click',()=>noteModal.classList.remove('open'));
-document.getElementById('cancelNote').addEventListener('click',()=>noteModal.classList.remove('open'));
-noteModal.addEventListener('click',e=>{if(e.target===noteModal)noteModal.classList.remove('open');});
-document.getElementById('saveNote').addEventListener('click',async()=>{
-  const text=document.getElementById('noteText').value.trim(); if(!text)return;
-  const note={id:Date.now(),tag:document.getElementById('noteTag').value,text,from:document.getElementById('noteFrom').value,
-    date:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})};
-  D.notes.unshift(note);
-  renderNotes(); document.getElementById('noteText').value='';
-  noteModal.classList.remove('open'); reapplyEditables();
-  await ghSaveData(D);
-});
-
-// ═══════════════════════════════════════════════════════════════
-//  GALLERY
-// ═══════════════════════════════════════════════════════════════
-let currentFilter='all';
-
-function photoSrc(p){ return p.url || p.dataUrl || ''; }
-
-function renderGallery(){
-  const grid=document.getElementById('galleryGrid');
-  const empty=document.getElementById('galleryEmpty');
-  grid.querySelectorAll('.gallery-item').forEach(el=>el.remove());
-  const filtered=currentFilter==='all'?D.photos:D.photos.filter(p=>p.tag===currentFilter);
-  empty.style.display=filtered.length===0?'block':'none';
-  if(!grid.contains(empty)) grid.appendChild(empty);
-  filtered.forEach(photo=>{
-    const src=photoSrc(photo);
-    const item=document.createElement('div');
-    item.className='gallery-item'; item.dataset.tag=photo.tag; item.dataset.id=photo.id;
-    item.innerHTML=`<img src="${src}" alt="${photo.caption||''}" loading="lazy" style="display:block;width:100%;border-radius:8px;"/>
-      <div class="overlay"><div class="overlay-caption">${photo.caption||'A memory ♡'}</div><div class="overlay-date">${photo.date||''}</div></div>`;
-    item.addEventListener('click',()=>openLightbox(photo.id));
-    grid.insertBefore(item,empty);
-  });
-}
-
-document.querySelectorAll('.filter-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active'); currentFilter=btn.dataset.filter; renderGallery();
-  });
-});
-
-// Upload modal
-const uploadModal=document.getElementById('uploadModal');
-const dropZone=document.getElementById('dropZone');
-const fileInput=document.getElementById('photoFileInput');
-const previewStrip=document.getElementById('previewStrip');
-let stagedFiles=[];
-
-function openUploadModal(){uploadModal.classList.add('open');stagedFiles=[];previewStrip.innerHTML='';}
-function closeUploadModal(){uploadModal.classList.remove('open');stagedFiles=[];previewStrip.innerHTML='';}
-document.getElementById('openUploadModal').addEventListener('click',openUploadModal);
-document.getElementById('closeUploadModal').addEventListener('click',closeUploadModal);
-document.getElementById('cancelUpload').addEventListener('click',closeUploadModal);
-uploadModal.addEventListener('click',e=>{if(e.target===uploadModal)closeUploadModal();});
-dropZone.addEventListener('click',()=>fileInput.click());
-fileInput.addEventListener('change',e=>handleFiles(Array.from(e.target.files)));
-dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragover');});
-dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('dragover');handleFiles(Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')));});
-
-function handleFiles(files){
-  files.forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      const dataUrl=ev.target.result; const id=Date.now()+Math.random();
-      stagedFiles.push({id,file,dataUrl});
-      const thumb=document.createElement('div'); thumb.className='preview-thumb'; thumb.dataset.id=id;
-      thumb.innerHTML=`<img src="${dataUrl}" alt="preview"/><button class="rm">×</button>`;
-      thumb.querySelector('.rm').addEventListener('click',e=>{e.stopPropagation();stagedFiles=stagedFiles.filter(f=>f.id!=id);thumb.remove();});
-      previewStrip.appendChild(thumb);
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-document.getElementById('savePhotos').addEventListener('click',async()=>{
-  if(!stagedFiles.length){alert('Please choose at least one photo first.');return;}
-  const caption=document.getElementById('photoCaption').value.trim();
-  const date=document.getElementById('photoDate').value.trim();
-  const tag=document.getElementById('photoTag').value;
-  const prog=document.getElementById('uploadProgress');
-  const fill=document.getElementById('progressFill');
-  const txt=document.getElementById('progressText');
-  prog.classList.add('show');
-
-  let saved=0;
-  for(const staged of stagedFiles){
-    const compressed=await new Promise(res=>compressImage(staged.dataUrl,1200,.82,res));
-    const filename=`photo_${Date.now()}_${Math.floor(Math.random()*10000)}.jpg`;
-    const photoObj=await ghSavePhoto(filename, compressed, caption, date, tag);
-    D.photos.unshift(photoObj);
-    saved++;
-    fill.style.width=Math.round(saved/stagedFiles.length*100)+'%';
-    txt.textContent=`Uploading ${saved} of ${stagedFiles.length}…`;
-  }
-  await ghSaveData(D);
-  renderGallery();
-  setTimeout(()=>{prog.classList.remove('show');fill.style.width='0%';closeUploadModal();
-    document.getElementById('photoCaption').value='';document.getElementById('photoDate').value='';},400);
-});
-
-function compressImage(dataUrl,maxW,quality,cb){
-  const img=new Image();
-  img.onload=()=>{
-    const scale=Math.min(1,maxW/img.width);
-    const c=document.createElement('canvas');
-    c.width=Math.round(img.width*scale); c.height=Math.round(img.height*scale);
-    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-    cb(c.toDataURL('image/jpeg',quality));
-  };
-  img.src=dataUrl;
-}
-
-const lightbox=document.getElementById('lightbox');
-const lbImg=document.getElementById('lbImg');
-let lbIndex=0;
-function filteredPhotos(){return currentFilter==='all'?D.photos:D.photos.filter(p=>p.tag===currentFilter);}
-function openLightbox(id){const list=filteredPhotos();lbIndex=list.findIndex(p=>p.id==id);if(lbIndex===-1)return;showLbSlide(list,lbIndex);lightbox.classList.add('open');document.body.style.overflow='hidden';}
-function showLbSlide(list,idx){const p=list[idx];lbImg.src=photoSrc(p);document.getElementById('lbCaption').textContent=p.caption||'A memory';document.getElementById('lbMeta').textContent=[p.date,p.tag].filter(Boolean).join(' · ');document.getElementById('lbCounter').textContent=`${idx+1} / ${list.length}`;}
-function closeLightbox(){lightbox.classList.remove('open');document.body.style.overflow='';lbImg.src='';}
-document.getElementById('lbClose').addEventListener('click',closeLightbox);
-lightbox.addEventListener('click',e=>{if(e.target===lightbox)closeLightbox();});
-document.getElementById('lbPrev').addEventListener('click',()=>{const l=filteredPhotos();lbIndex=(lbIndex-1+l.length)%l.length;showLbSlide(l,lbIndex);});
-document.getElementById('lbNext').addEventListener('click',()=>{const l=filteredPhotos();lbIndex=(lbIndex+1)%l.length;showLbSlide(l,lbIndex);});
-document.addEventListener('keydown',e=>{if(!lightbox.classList.contains('open'))return;if(e.key==='ArrowLeft')document.getElementById('lbPrev').click();if(e.key==='ArrowRight')document.getElementById('lbNext').click();if(e.key==='Escape')closeLightbox();});
-document.getElementById('lbDelete').addEventListener('click',async()=>{
-  if(!confirm('Remove this photo?'))return;
-  const list=filteredPhotos(); const id=list[lbIndex].id;
-  D.photos=D.photos.filter(p=>p.id!=id);
-  await ghSaveData(D); renderGallery();
-  const nl=filteredPhotos();
-  if(!nl.length){closeLightbox();return;}
-  lbIndex=Math.min(lbIndex,nl.length-1); showLbSlide(nl,lbIndex);
-});
-
-const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});},{threshold:.12});
-document.querySelectorAll('.fade-in').forEach(el=>observer.observe(el));
-if(window.matchMedia('(prefers-reduced-motion:reduce)').matches) document.querySelectorAll('.petal').forEach(p=>p.style.animationPlayState='paused');
-
-
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 //  SETUP WIZARD
-// ═══════════════════════════════════════════════════════════════
-const SETUP_DONE_KEY = 'us_always_setup_done';
-
-function wIsSetupDone() {
-  return !!localStorage.getItem(SETUP_DONE_KEY);
-}
-
+// ═══════════════════════════════════════════════════════
 function wOpen() {
-  // Pre-fill from existing saved values if any
   document.getElementById('wUser').value   = localStorage.getItem('gh_user')   || '';
   document.getElementById('wRepo').value   = localStorage.getItem('gh_repo')   || '';
   document.getElementById('wBranch').value = localStorage.getItem('gh_branch') || 'main';
   document.getElementById('wToken').value  = '';
-  // Set site URL on success step
   const user = localStorage.getItem('gh_user') || 'yourname';
   const repo = localStorage.getItem('gh_repo') || 'your-repo';
-  document.getElementById('wSiteUrl').textContent = `https://${user}.github.io/${repo}`;
+  document.getElementById('wSiteUrl').textContent = 'https://' + user + '.github.io/' + repo;
+  wGoTo(0);
   document.getElementById('setupWizard').classList.add('open');
 }
 
@@ -1355,20 +946,17 @@ function wClose() {
 }
 
 function wGoTo(step) {
-  document.querySelectorAll('.wizard-step').forEach((el,i) => {
-    el.classList.toggle('active', i === step);
-  });
+  document.querySelectorAll('.wizard-step').forEach((el,i) => el.classList.toggle('active', i === step));
   document.querySelectorAll('.wstep-dot').forEach((dot,i) => {
     dot.classList.remove('active','done');
-    if (i < step) dot.classList.add('done');
+    if (i < step)  dot.classList.add('done');
     if (i === step) dot.classList.add('active');
   });
-  // clear errors
   document.querySelectorAll('.wizard-err').forEach(e => e.classList.remove('show'));
 }
 
 function wSkip() {
-  localStorage.setItem(SETUP_DONE_KEY, 'skipped');
+  localStorage.setItem(SETUP_KEY, 'skipped');
   wClose();
 }
 
@@ -1379,169 +967,459 @@ function wStep1Next() {
   const err    = document.getElementById('wErr1');
   if (!user || !repo) { err.classList.add('show'); return; }
   err.classList.remove('show');
-  // Save interim values
   localStorage.setItem('gh_user',   user);
   localStorage.setItem('gh_repo',   repo);
   localStorage.setItem('gh_branch', branch);
-  // Update the success step URL preview
-  document.getElementById('wSiteUrl').textContent = `https://${user}.github.io/${repo}`;
+  document.getElementById('wSiteUrl').textContent = 'https://' + user + '.github.io/' + repo;
   wGoTo(2);
 }
 
 async function wStep2Next() {
-  const token = document.getElementById('wToken').value.trim();
-  const err   = document.getElementById('wErr2');
+  const token   = document.getElementById('wToken').value.trim();
+  const err     = document.getElementById('wErr2');
   const testing = document.getElementById('wTesting');
+  const btn     = document.querySelector('#wstep2 .wizard-btn-primary');
   if (!token) { err.textContent = 'Please paste your token.'; err.classList.add('show'); return; }
   err.classList.remove('show');
   testing.classList.add('show');
-  document.querySelector('#wstep2 .wizard-btn-primary').disabled = true;
+  btn.disabled = true;
   try {
     const user = localStorage.getItem('gh_user');
     const repo = localStorage.getItem('gh_repo');
-    const r = await fetch(`https://api.github.com/repos/${user}/${repo}`, {
+    const r = await fetch('https://api.github.com/repos/' + user + '/' + repo, {
       headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' }
     });
-    if (r.status === 404) throw new Error("Repo not found. Double-check the name.");
-    if (r.status === 401) throw new Error("Token is invalid or expired.");
-    if (!r.ok) throw new Error("GitHub returned " + r.status);
-    // Success — save token and mark setup done
+    if (r.status === 404) throw new Error('Repo not found. Check your username and repo name.');
+    if (r.status === 401) throw new Error('Token is invalid or expired.');
+    if (!r.ok) throw new Error('GitHub returned ' + r.status);
     localStorage.setItem('gh_token', token);
-    localStorage.setItem(SETUP_DONE_KEY, 'done');
+    localStorage.setItem(SETUP_KEY, 'done');
     setSyncStatus('ok', 'Connected');
     testing.classList.remove('show');
+    btn.disabled = false;
     wGoTo(3);
-    // Push current data to GitHub right away
     await ghSaveData(D);
   } catch(e) {
     testing.classList.remove('show');
-    document.querySelector('#wstep2 .wizard-btn-primary').disabled = false;
-    err.textContent = '✗ ' + e.message;
+    btn.disabled = false;
+    err.textContent = e.message;
     err.classList.add('show');
   }
 }
 
-function wFinish() {
-  wClose();
-}
+function wFinish() { wClose(); }
 
-// ── Hook into the unlock flow ──
-// After unlockSite() runs, show setup wizard on first visit
-const _origUnlockSite = unlockSite;
-
-// ═══════════════════════════════════════════════════════════════
-//  LOCK SCREEN
-// ═══════════════════════════════════════════════════════════════
-const PASS_KEY    = 'us_always_pass';
-const SESSION_KEY = 'us_always_session';
-
-async function hashPass(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str + 'us_always_salt_xo'));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-function isUnlocked() { return sessionStorage.getItem(SESSION_KEY) === 'yes'; }
-
-function unlockSite() {
-  sessionStorage.setItem(SESSION_KEY, 'yes');
-  const ls = document.getElementById('lockScreen');
-  if (ls) {
-    ls.classList.add('unlocked');
-    setTimeout(() => { if(ls.parentNode) ls.parentNode.removeChild(ls); }, 700);
-  }
-  init();
-  // Show setup wizard automatically on first visit if GitHub not configured
-  if (!wIsSetupDone()) {
-    setTimeout(() => wOpen(), 800);
-  }
-}
-
-// Spawn petals on lock screen
-const lp = document.getElementById('lockPetals');
-if (lp) {
-  for (let i = 0; i < 14; i++) {
-    const p = document.createElement('div'); p.className = 'petal';
-    p.style.cssText = 'left:'+Math.random()*100+'%;width:'+(5+Math.random()*5)+'px;height:'+(5+Math.random()*5)+'px;animation-duration:'+(9+Math.random()*10)+'s;animation-delay:'+(Math.random()*14)+'s;';
-    lp.appendChild(p);
-  }
-}
-
-if (isUnlocked()) {
-  unlockSite();
-} else {
-  const hasPass = !!localStorage.getItem(PASS_KEY);
-  const lockBtn   = document.getElementById('lockBtn');
-  const lockInput = document.getElementById('lockInput');
-  const lockToggle= document.getElementById('lockToggle');
-  const lockSetup = document.getElementById('lockSetupLink');
-  const setPassModal = document.getElementById('setPasswordModal');
-
-  if (!hasPass) {
-    lockBtn.style.display = 'none';
-    lockInput.style.display = 'none';
-    lockToggle.style.display = 'none';
-    setPassModal.classList.add('open');
-  }
-
-  async function tryUnlock() {
-    const val = lockInput.value; if (!val) return;
-    const hashed = await hashPass(val);
-    if (hashed === localStorage.getItem(PASS_KEY)) {
-      document.getElementById('lockError').textContent = '';
-      unlockSite();
-    } else {
-      lockInput.classList.remove('shake');
-      void lockInput.offsetWidth;
-      lockInput.classList.add('shake');
-      document.getElementById('lockError').textContent = 'Wrong password — try again';
-      lockInput.value = ''; lockInput.focus();
-    }
-  }
-
-  lockBtn.addEventListener('click', tryUnlock);
-  lockInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
-  lockToggle.addEventListener('click', () => { lockInput.type = lockInput.type === 'password' ? 'text' : 'password'; });
-  lockSetup.addEventListener('click', () => setPassModal.classList.add('open'));
-}
-
-// Set / change password modal
-document.getElementById('cancelSetPass').addEventListener('click', () => {
-  document.getElementById('setPasswordModal').classList.remove('open');
-});
-document.getElementById('confirmSetPass').addEventListener('click', async () => {
-  const p1 = document.getElementById('newPass1').value;
-  const p2 = document.getElementById('newPass2').value;
-  const err = document.getElementById('setPassError');
-  if (!p1) { err.textContent = 'Please enter a password.'; return; }
-  if (p1.length < 4) { err.textContent = 'At least 4 characters please.'; return; }
-  if (p1 !== p2) { err.textContent = "Passwords don't match."; return; }
-  localStorage.setItem(PASS_KEY, await hashPass(p1));
-  err.textContent = '';
-  document.getElementById('setPasswordModal').classList.remove('open');
-  document.getElementById('newPass1').value = '';
-  document.getElementById('newPass2').value = '';
-  // Show inputs if they were hidden
-  const lb = document.getElementById('lockBtn');
-  const li = document.getElementById('lockInput');
-  const lt = document.getElementById('lockToggle');
-  if (lb) lb.style.display = '';
-  if (li) li.style.display = '';
-  if (lt) lt.style.display = '';
-  unlockSite();
+// ── Settings panel: clicking Reconfigure opens wizard ──
+document.getElementById('settingsSave').addEventListener('click', () => {
+  localStorage.removeItem(SETUP_KEY);
+  document.getElementById('settingsPanel').classList.remove('open');
+  wGoTo(0);
+  wOpen();
 });
 
-// Change password link in settings panel — inject it
-const settingsDiv = document.getElementById('settingsPanel');
-if (settingsDiv) {
+// ── Settings panel: change password link ──
+(function addChangePassLink() {
+  const panel = document.getElementById('settingsPanel');
+  if (!panel) return;
   const div = document.createElement('div');
-  div.style.cssText = 'margin-top:.8rem;';
-  div.innerHTML = '<div style="height:1px;background:var(--border);margin-bottom:.8rem;"></div><button style="background:none;border:none;color:var(--rose);font-family:var(--sans);font-size:12px;cursor:pointer;letter-spacing:.04em;padding:0;" id="changePassBtn">Change site password</button>';
-  settingsDiv.appendChild(div);
+  div.style.cssText = 'margin-top:.8rem;border-top:1px solid var(--border);padding-top:.8rem;';
+  div.innerHTML = '<button style="background:none;border:none;color:var(--rose);font-family:var(--sans);font-size:12px;cursor:pointer;letter-spacing:.04em;padding:0;" id="changePassBtn">Change site password</button>';
+  panel.appendChild(div);
   document.getElementById('changePassBtn').addEventListener('click', () => {
     document.getElementById('settingsPanel').classList.remove('open');
     document.getElementById('setPasswordModal').classList.add('open');
   });
+})();
+
+// ═══════════════════════════════════════════════════════
+//  INIT: load from GitHub, then render page
+// ═══════════════════════════════════════════════════════
+async function init() {
+  if (ghReady()) {
+    const remote = await ghLoadData();
+    if (remote) { D = mergeDefaults(remote, DEFAULT_DATA); lsSave('siteData', D); }
+  } else {
+    setSyncStatus('ok', '');
+  }
+  applyTexts();
+  renderTimeline();
+  renderBucket();
+  renderNotes();
+  renderGallery();
+  const annDate = D.anniversaryDate || '2023-06-14';
+  document.getElementById('anniversaryDateInput').value = annDate;
+  ANNIVERSARY = new Date(annDate + 'T00:00:00');
+  updateCounter();
 }
+
+// ═══════════════════════════════════════════════════════
+//  COUNTER
+// ═══════════════════════════════════════════════════════
+let ANNIVERSARY = new Date((D.anniversaryDate || '2023-06-14') + 'T00:00:00');
+function updateCounter() {
+  const diff = Date.now() - ANNIVERSARY.getTime();
+  if (diff < 0) return;
+  const h = Math.floor(diff / 3600000), d = Math.floor(h / 24);
+  document.getElementById('cnt-years').textContent  = Math.floor(d / 365.25);
+  document.getElementById('cnt-months').textContent = Math.floor((d % 365.25) / 30.44);
+  document.getElementById('cnt-days').textContent   = Math.floor(d % 30.44);
+  document.getElementById('cnt-hours').textContent  = h % 24;
+}
+setInterval(updateCounter, 60000);
+
+document.getElementById('anniversaryDateInput').addEventListener('change', async function() {
+  const d = new Date(this.value + 'T00:00:00');
+  if (isNaN(d)) return;
+  ANNIVERSARY = d; D.anniversaryDate = this.value;
+  updateCounter();
+  await ghSaveData(D);
+});
+
+// ═══════════════════════════════════════════════════════
+//  PETALS (hero)
+// ═══════════════════════════════════════════════════════
+(function spawnHeroPetals() {
+  const pc = document.getElementById('petals');
+  if (!pc) return;
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div'); p.className = 'petal';
+    p.style.cssText = 'left:' + (Math.random()*100) + '%;width:' + (5+Math.random()*6) + 'px;height:' + (5+Math.random()*6) + 'px;animation-duration:' + (8+Math.random()*10) + 's;animation-delay:' + (Math.random()*12) + 's;';
+    pc.appendChild(p);
+  }
+})();
+
+// ═══════════════════════════════════════════════════════
+//  NAV
+// ═══════════════════════════════════════════════════════
+const navToggle = document.getElementById('navToggle');
+const navLinks  = document.getElementById('navLinks');
+navToggle.addEventListener('click', () => navLinks.classList.toggle('open'));
+function closeNav() { navLinks.classList.remove('open'); }
+
+// Settings panel toggle
+const settingsPanel = document.getElementById('settingsPanel');
+document.getElementById('settingsBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  settingsPanel.classList.toggle('open');
+  const connected = ghReady() ? 'connected' : 'not configured';
+  const st = document.getElementById('ghStatusText');
+  if (st) st.textContent = connected;
+});
+document.addEventListener('click', e => {
+  if (!settingsPanel.contains(e.target) && e.target.id !== 'settingsBtn') settingsPanel.classList.remove('open');
+});
+
+// ═══════════════════════════════════════════════════════
+//  INLINE TEXT EDITING
+// ═══════════════════════════════════════════════════════
+let editMode = false;
+const editToggle = document.getElementById('editToggle');
+
+function applyTexts() {
+  document.querySelectorAll('[data-key]').forEach(el => {
+    const val = D.texts[el.dataset.key];
+    if (val !== undefined) el.textContent = val;
+  });
+}
+function collectTexts() {
+  document.querySelectorAll('[data-key]').forEach(el => { D.texts[el.dataset.key] = el.textContent; });
+}
+function setEditables(on) {
+  document.querySelectorAll('[data-editable]').forEach(el => {
+    el.contentEditable = on ? 'true' : 'false';
+    if (el.tagName === 'A') el.style.pointerEvents = on ? 'none' : '';
+  });
+}
+function setEditMode(on) {
+  editMode = on;
+  document.body.classList.toggle('editing', on);
+  editToggle.classList.toggle('active', on);
+  editToggle.innerHTML = on
+    ? '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.5 12.75l6 6 9-13.5"/></svg> Done'
+    : '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg> Edit';
+  setEditables(on);
+  if (!on) { collectTexts(); collectTimelineEdits(); collectBucketEdits(); collectNoteEdits(); ghSaveData(D); }
+}
+editToggle.addEventListener('click', () => setEditMode(!editMode));
+document.addEventListener('keydown', e => {
+  if (editMode && e.key === 'Enter' && e.target.hasAttribute('data-editable')) { e.preventDefault(); e.target.blur(); }
+});
+function reapplyEditables() { if (editMode) setEditables(true); }
+
+// ═══════════════════════════════════════════════════════
+//  TIMELINE
+// ═══════════════════════════════════════════════════════
+function renderTimeline() {
+  const list = document.getElementById('timelineList'); list.innerHTML = '';
+  D.timeline.forEach(item => {
+    const div = document.createElement('div'); div.className = 'tl-item'; div.dataset.id = item.id;
+    const badge = item.badgeLabel ? '<span class="tl-badge ' + (item.badge==='milestone'?'milestone':'') + '" data-editable data-key="tlBadge_' + item.id + '">' + item.badgeLabel + '</span>' : '';
+    div.innerHTML = '<div class="tl-dot ' + (item.future?'future':'') + '"></div>' + badge +
+      '<p class="tl-year" data-editable data-key="tlDate_' + item.id + '">' + item.date + '</p>' +
+      '<h3 class="tl-title" data-editable data-key="tlTitle_' + item.id + '">' + item.title + '</h3>' +
+      '<p class="tl-desc" data-editable="block" data-key="tlDesc_' + item.id + '">' + item.desc + '</p>' +
+      '<button class="tl-remove edit-ctrl" onclick="removeTlItem(' + item.id + ')">Remove</button>';
+    list.appendChild(div);
+  });
+  applyTexts(); reapplyEditables();
+}
+function collectTimelineEdits() {
+  D.timeline.forEach(item => {
+    ['tlDate_','tlTitle_','tlDesc_','tlBadge_'].forEach(pfx => {
+      const el = document.querySelector('[data-key="' + pfx + item.id + '"]');
+      if (!el) return;
+      if (pfx==='tlDate_')  item.date       = el.textContent;
+      if (pfx==='tlTitle_') item.title      = el.textContent;
+      if (pfx==='tlDesc_')  item.desc       = el.textContent;
+      if (pfx==='tlBadge_') item.badgeLabel = el.textContent;
+    });
+  });
+}
+function removeTlItem(id) {
+  if (!confirm('Remove this milestone?')) return;
+  D.timeline = D.timeline.filter(i => i.id !== id);
+  renderTimeline(); ghSaveData(D);
+}
+const tlModal = document.getElementById('tlModal');
+document.getElementById('addTlBtn').addEventListener('click', () => tlModal.classList.add('open'));
+document.getElementById('closeTlModal').addEventListener('click', () => tlModal.classList.remove('open'));
+document.getElementById('cancelTl').addEventListener('click', () => tlModal.classList.remove('open'));
+tlModal.addEventListener('click', e => { if (e.target === tlModal) tlModal.classList.remove('open'); });
+document.getElementById('saveTl').addEventListener('click', async () => {
+  const title = document.getElementById('tlTitle').value.trim(); if (!title) return;
+  const bk = document.getElementById('tlBadge').value;
+  const bm = { milestone:'Milestone', moment:'A moment', growing:'Growing together', beginning:'The beginning' };
+  const item = { id:Date.now(), date:document.getElementById('tlDate').value.trim()||'A moment in time', badge:bk, badgeLabel:bm[bk]||'', title, desc:document.getElementById('tlDesc').value.trim(), future:false };
+  const fi = D.timeline.findIndex(i => i.future);
+  if (fi >= 0) D.timeline.splice(fi, 0, item); else D.timeline.push(item);
+  renderTimeline();
+  ['tlDate','tlTitle','tlDesc'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('tlBadge').value = '';
+  tlModal.classList.remove('open'); reapplyEditables();
+  await ghSaveData(D);
+});
+
+// ═══════════════════════════════════════════════════════
+//  BUCKET LIST
+// ═══════════════════════════════════════════════════════
+function renderBucket() {
+  ['travel','experiences'].forEach(cat => {
+    const el = document.getElementById('bucket-' + cat); el.innerHTML = '';
+    D.bucket[cat].forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'bucket-item' + (item.done ? ' done' : ''); div.dataset.id = item.id;
+      div.innerHTML = '<div class="bucket-check" onclick="toggleBucket(this)"></div>' +
+        '<span class="bucket-text" data-editable="block" data-key="bucket_' + item.id + '">' + item.text + '</span>' +
+        '<button class="bucket-remove edit-ctrl" onclick="removeBucketItem(\'' + cat + '\',' + item.id + ')"></button>';
+      el.appendChild(div);
+    });
+  });
+  applyTexts(); reapplyEditables();
+}
+function collectBucketEdits() {
+  ['travel','experiences'].forEach(cat => {
+    D.bucket[cat].forEach(item => {
+      const el = document.querySelector('[data-key="bucket_' + item.id + '"]');
+      if (el) item.text = el.textContent;
+      const row = document.querySelector('#bucket-' + cat + ' [data-id="' + item.id + '"]');
+      if (row) item.done = row.classList.contains('done');
+    });
+  });
+}
+function toggleBucket(checkEl) {
+  const row = checkEl.closest('.bucket-item'); row.classList.toggle('done');
+  const id = parseInt(row.dataset.id);
+  ['travel','experiences'].forEach(cat => { const f = D.bucket[cat].find(i => i.id===id); if(f) f.done = row.classList.contains('done'); });
+  ghSaveData(D);
+}
+function removeBucketItem(cat, id) {
+  D.bucket[cat] = D.bucket[cat].filter(i => i.id !== id);
+  renderBucket(); ghSaveData(D);
+}
+function addBucketItem(cat, inputId) {
+  const input = document.getElementById(inputId); const text = input.value.trim(); if (!text) return;
+  D.bucket[cat].push({ id:Date.now(), text, done:false });
+  renderBucket(); input.value = ''; reapplyEditables(); ghSaveData(D);
+}
+['addTravel','addExp'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); addBucketItem(id==='addTravel'?'travel':'experiences', id); }
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+//  LOVE NOTES
+// ═══════════════════════════════════════════════════════
+function renderNotes() {
+  const grid = document.getElementById('notesGrid'); grid.innerHTML = '';
+  D.notes.forEach(note => {
+    const card = document.createElement('div'); card.className = 'note-card'; card.dataset.id = note.id;
+    card.innerHTML = '<button class="note-remove" onclick="removeNote(' + note.id + ')"></button>' +
+      '<span class="note-tag" data-editable data-key="noteTag_' + note.id + '">' + note.tag + '</span>' +
+      '<p class="note-text" data-editable="block" data-key="noteText_' + note.id + '">' + note.text + '</p>' +
+      '<div class="note-from"><span>from <strong data-editable data-key="noteFrom_' + note.id + '">' + note.from + '</strong></span>' +
+      '<span data-editable data-key="noteDate_' + note.id + '">' + note.date + '</span></div>';
+    grid.appendChild(card);
+  });
+  applyTexts(); reapplyEditables();
+}
+function collectNoteEdits() {
+  D.notes.forEach(note => {
+    ['noteText_','noteTag_','noteFrom_','noteDate_'].forEach(pfx => {
+      const el = document.querySelector('[data-key="' + pfx + note.id + '"]');
+      if (!el) return;
+      if (pfx==='noteText_') note.text = el.textContent;
+      if (pfx==='noteTag_')  note.tag  = el.textContent;
+      if (pfx==='noteFrom_') note.from = el.textContent;
+      if (pfx==='noteDate_') note.date = el.textContent;
+    });
+  });
+}
+function removeNote(id) {
+  if (!confirm('Delete this note?')) return;
+  D.notes = D.notes.filter(n => n.id !== id);
+  renderNotes(); ghSaveData(D);
+}
+const noteModal = document.getElementById('noteModal');
+document.getElementById('openNoteModal').addEventListener('click', () => noteModal.classList.add('open'));
+document.getElementById('closeNoteModal').addEventListener('click', () => noteModal.classList.remove('open'));
+document.getElementById('cancelNote').addEventListener('click', () => noteModal.classList.remove('open'));
+noteModal.addEventListener('click', e => { if (e.target === noteModal) noteModal.classList.remove('open'); });
+document.getElementById('saveNote').addEventListener('click', async () => {
+  const text = document.getElementById('noteText').value.trim(); if (!text) return;
+  const note = { id:Date.now(), tag:document.getElementById('noteTag').value, text, from:document.getElementById('noteFrom').value,
+    date:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) };
+  D.notes.unshift(note); renderNotes();
+  document.getElementById('noteText').value = '';
+  noteModal.classList.remove('open'); reapplyEditables();
+  await ghSaveData(D);
+});
+
+// ═══════════════════════════════════════════════════════
+//  GALLERY
+// ═══════════════════════════════════════════════════════
+let currentFilter = 'all';
+function photoSrc(p) { return p.url || p.dataUrl || ''; }
+
+function renderGallery() {
+  const grid = document.getElementById('galleryGrid');
+  const empty = document.getElementById('galleryEmpty');
+  grid.querySelectorAll('.gallery-item').forEach(el => el.remove());
+  const filtered = currentFilter === 'all' ? D.photos : D.photos.filter(p => p.tag === currentFilter);
+  empty.style.display = filtered.length === 0 ? 'block' : 'none';
+  if (!grid.contains(empty)) grid.appendChild(empty);
+  filtered.forEach(photo => {
+    const item = document.createElement('div'); item.className = 'gallery-item'; item.dataset.tag = photo.tag; item.dataset.id = photo.id;
+    item.innerHTML = '<img src="' + photoSrc(photo) + '" alt="' + (photo.caption||'') + '" loading="lazy" style="display:block;width:100%;border-radius:8px;"/>' +
+      '<div class="overlay"><div class="overlay-caption">' + (photo.caption||'A memory') + '</div><div class="overlay-date">' + (photo.date||'') + '</div></div>';
+    item.addEventListener('click', () => openLightbox(photo.id));
+    grid.insertBefore(item, empty);
+  });
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); currentFilter = btn.dataset.filter; renderGallery();
+  });
+});
+
+const uploadModal  = document.getElementById('uploadModal');
+const dropZone     = document.getElementById('dropZone');
+const fileInput    = document.getElementById('photoFileInput');
+const previewStrip = document.getElementById('previewStrip');
+let stagedFiles = [];
+
+function openUploadModal()  { uploadModal.classList.add('open'); stagedFiles = []; previewStrip.innerHTML = ''; }
+function closeUploadModal() { uploadModal.classList.remove('open'); stagedFiles = []; previewStrip.innerHTML = ''; }
+document.getElementById('openUploadModal').addEventListener('click', openUploadModal);
+document.getElementById('closeUploadModal').addEventListener('click', closeUploadModal);
+document.getElementById('cancelUpload').addEventListener('click', closeUploadModal);
+uploadModal.addEventListener('click', e => { if (e.target === uploadModal) closeUploadModal(); });
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => handleFiles(Array.from(e.target.files)));
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))); });
+
+function handleFiles(files) {
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const dataUrl = ev.target.result; const id = Date.now() + Math.random();
+      stagedFiles.push({ id, dataUrl });
+      const thumb = document.createElement('div'); thumb.className = 'preview-thumb'; thumb.dataset.id = id;
+      thumb.innerHTML = '<img src="' + dataUrl + '" alt="preview"/><button class="rm">x</button>';
+      thumb.querySelector('.rm').addEventListener('click', ev2 => { ev2.stopPropagation(); stagedFiles = stagedFiles.filter(f => f.id != id); thumb.remove(); });
+      previewStrip.appendChild(thumb);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('savePhotos').addEventListener('click', async () => {
+  if (!stagedFiles.length) { alert('Please choose at least one photo first.'); return; }
+  const caption = document.getElementById('photoCaption').value.trim();
+  const date    = document.getElementById('photoDate').value.trim();
+  const tag     = document.getElementById('photoTag').value;
+  const prog = document.getElementById('uploadProgress');
+  const fill = document.getElementById('progressFill');
+  const txt  = document.getElementById('progressText');
+  prog.classList.add('show');
+  let saved = 0;
+  for (const staged of stagedFiles) {
+    const compressed = await new Promise(res => compressImage(staged.dataUrl, 1200, .82, res));
+    const filename   = 'photo_' + Date.now() + '_' + Math.floor(Math.random()*10000) + '.jpg';
+    const photoObj   = await ghSavePhoto(filename, compressed, caption, date, tag);
+    D.photos.unshift(photoObj); saved++;
+    fill.style.width = Math.round(saved / stagedFiles.length * 100) + '%';
+    txt.textContent  = 'Uploading ' + saved + ' of ' + stagedFiles.length + '…';
+  }
+  await ghSaveData(D); renderGallery();
+  setTimeout(() => { prog.classList.remove('show'); fill.style.width='0%'; closeUploadModal(); document.getElementById('photoCaption').value=''; document.getElementById('photoDate').value=''; }, 400);
+});
+
+function compressImage(dataUrl, maxW, quality, cb) {
+  const img = new Image();
+  img.onload = () => {
+    const scale = Math.min(1, maxW / img.width);
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(img.width * scale); cv.height = Math.round(img.height * scale);
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    cb(cv.toDataURL('image/jpeg', quality));
+  };
+  img.src = dataUrl;
+}
+
+const lightbox = document.getElementById('lightbox');
+const lbImg    = document.getElementById('lbImg');
+let lbIndex    = 0;
+function filteredPhotos() { return currentFilter === 'all' ? D.photos : D.photos.filter(p => p.tag === currentFilter); }
+function openLightbox(id) { const list = filteredPhotos(); lbIndex = list.findIndex(p => p.id == id); if (lbIndex === -1) return; showLbSlide(list, lbIndex); lightbox.classList.add('open'); document.body.style.overflow = 'hidden'; }
+function showLbSlide(list, idx) { const p = list[idx]; lbImg.src = photoSrc(p); document.getElementById('lbCaption').textContent = p.caption || 'A memory'; document.getElementById('lbMeta').textContent = [p.date, p.tag].filter(Boolean).join(' · '); document.getElementById('lbCounter').textContent = (idx+1) + ' / ' + list.length; }
+function closeLightbox() { lightbox.classList.remove('open'); document.body.style.overflow = ''; lbImg.src = ''; }
+document.getElementById('lbClose').addEventListener('click', closeLightbox);
+lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+document.getElementById('lbPrev').addEventListener('click', () => { const l = filteredPhotos(); lbIndex = (lbIndex - 1 + l.length) % l.length; showLbSlide(l, lbIndex); });
+document.getElementById('lbNext').addEventListener('click', () => { const l = filteredPhotos(); lbIndex = (lbIndex + 1) % l.length; showLbSlide(l, lbIndex); });
+document.addEventListener('keydown', e => { if (!lightbox.classList.contains('open')) return; if (e.key==='ArrowLeft') document.getElementById('lbPrev').click(); if (e.key==='ArrowRight') document.getElementById('lbNext').click(); if (e.key==='Escape') closeLightbox(); });
+document.getElementById('lbDelete').addEventListener('click', async () => {
+  if (!confirm('Remove this photo?')) return;
+  const list = filteredPhotos(); const id = list[lbIndex].id;
+  D.photos = D.photos.filter(p => p.id != id);
+  await ghSaveData(D); renderGallery();
+  const nl = filteredPhotos();
+  if (!nl.length) { closeLightbox(); return; }
+  lbIndex = Math.min(lbIndex, nl.length - 1); showLbSlide(nl, lbIndex);
+});
+
+// ═══════════════════════════════════════════════════════
+//  SCROLL FADE-IN
+// ═══════════════════════════════════════════════════════
+const observer = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }); }, { threshold: .12 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+if (window.matchMedia('(prefers-reduced-motion:reduce)').matches) document.querySelectorAll('.petal').forEach(p => p.style.animationPlayState = 'paused');
 </script>
+
 </body>
 </html>
