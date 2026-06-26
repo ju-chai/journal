@@ -156,87 +156,160 @@ body.editing #editBanner{display:block;}
 .gallery-filter{display:flex;gap:.5rem;flex-wrap:wrap;}
 .filter-btn{font-family:var(--sans);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 16px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;}
 .filter-btn:hover,.filter-btn.active{background:var(--rose);border-color:var(--rose);color:white;}
-/* ── POLAROID GALLERY ── */
-.gallery-grid{
+/* ── ALBUM GALLERY ── */
+/* Albums view */
+.albums-grid{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:1.8rem;
+  grid-template-columns:repeat(3,1fr);
+  gap:1.5rem;
 }
-@media(max-width:900px){.gallery-grid{grid-template-columns:repeat(3,1fr);gap:1.4rem;}}
-@media(max-width:600px){.gallery-grid{grid-template-columns:repeat(2,1fr);gap:1rem;}}
+@media(max-width:800px){.albums-grid{grid-template-columns:repeat(2,1fr);gap:1.2rem;}}
+@media(max-width:480px){.albums-grid{grid-template-columns:repeat(2,1fr);gap:.8rem;}}
 
-.gallery-item{
-  background:white;
-  padding:10px 10px 44px;
-  box-shadow:0 2px 8px rgba(58,37,32,.1),0 0 0 0.5px rgba(58,37,32,.06);
-  border-radius:2px;
+.album-card{
   cursor:pointer;
-  transform:rotate(var(--tilt,0deg)) translateY(0);
-  transition:transform .35s cubic-bezier(.25,.46,.45,.94),box-shadow .35s ease;
   position:relative;
 }
-.gallery-item:hover{
-  transform:rotate(0deg) translateY(-6px) scale(1.03);
-  box-shadow:0 16px 48px rgba(58,37,32,.18),0 0 0 0.5px rgba(58,37,32,.08);
-  z-index:2;
-}
-.gallery-item:nth-child(4n+1){--tilt:-1.2deg;}
-.gallery-item:nth-child(4n+2){--tilt: 0.8deg;}
-.gallery-item:nth-child(4n+3){--tilt:-0.6deg;}
-.gallery-item:nth-child(4n+4){--tilt: 1.4deg;}
-.gallery-item img{
-  width:100%;
+.album-cover-wrap{
+  position:relative;
+  border-radius:10px;
+  overflow:hidden;
   aspect-ratio:1/1;
+  background:var(--blush);
+  margin-bottom:.75rem;
+  transition:transform .35s cubic-bezier(.25,.46,.45,.94),box-shadow .35s ease;
+}
+.album-card:hover .album-cover-wrap{
+  transform:translateY(-4px);
+  box-shadow:0 12px 36px rgba(58,37,32,.14);
+}
+.album-cover-wrap img{
+  width:100%;height:100%;
   object-fit:cover;
   display:block;
-  border-radius:1px;
+  transition:transform .5s ease;
 }
-.polaroid-caption{
+.album-card:hover .album-cover-wrap img{transform:scale(1.05);}
+.album-count{
   position:absolute;
-  bottom:0;left:0;right:0;
-  padding:8px 10px 10px;
-  text-align:center;
+  bottom:.6rem;right:.6rem;
+  background:rgba(20,10,8,.6);
+  color:white;
+  font-size:11px;
+  letter-spacing:.06em;
+  padding:3px 9px;
+  border-radius:100px;
+  backdrop-filter:blur(4px);
 }
-.polaroid-caption-text{
+.album-info{}
+.album-title{
   font-family:var(--serif);
   font-style:italic;
-  font-size:13px;
-  color:var(--warm);
-  line-height:1.3;
-  display:block;
+  font-size:17px;
+  color:var(--walnut);
+  line-height:1.2;
+  margin-bottom:2px;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
-.polaroid-date{
-  font-size:9px;
+.album-date{
+  font-size:10px;
   letter-spacing:.1em;
   text-transform:uppercase;
   color:var(--muted);
-  margin-top:2px;
-  display:block;
 }
-/* Pagination */
-.gallery-pagination{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:.6rem;
-  margin-top:2.5rem;
-  flex-wrap:wrap;
-}
-.page-btn{
-  width:36px;height:36px;
+.album-delete{
+  position:absolute;
+  top:.5rem;right:.5rem;
+  width:26px;height:26px;
   border-radius:50%;
-  border:1px solid var(--border);
-  background:transparent;
-  font-family:var(--sans);
+  background:rgba(20,10,8,.55);
+  border:none;
+  color:white;
   font-size:13px;
-  color:var(--muted);
   cursor:pointer;
-  transition:all .2s;
-  display:flex;align-items:center;justify-content:center;
+  display:none;
+  align-items:center;justify-content:center;
+  transition:background .2s;
+  z-index:2;
 }
+.album-delete:hover{background:rgba(192,57,43,.85);}
+body.editing .album-delete{display:flex;}
+
+/* Album open view (photos inside) */
+.album-open-view{
+  display:none;
+  animation:fadeInUp .4s ease;
+}
+.album-open-view.active{display:block;}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+.album-back-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+  background:none;
+  border:none;
+  cursor:pointer;
+  padding:0;
+  margin-bottom:1.5rem;
+  transition:color .2s;
+}
+.album-back-btn:hover{color:var(--warm);}
+.album-open-title{
+  font-family:var(--serif);
+  font-size:32px;
+  font-weight:300;
+  font-style:italic;
+  color:var(--walnut);
+  margin-bottom:.3rem;
+}
+.album-open-meta{
+  font-size:11px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:2rem;
+}
+/* Photos grid inside open album — polaroid style */
+.album-photos-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:1.2rem;
+}
+@media(max-width:700px){.album-photos-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:480px){.album-photos-grid{grid-template-columns:repeat(2,1fr);}}
+
+.album-photo-item{
+  background:white;
+  padding:8px 8px 36px;
+  box-shadow:0 2px 8px rgba(58,37,32,.09);
+  border-radius:2px;
+  cursor:pointer;
+  transform:rotate(var(--tilt,0deg));
+  transition:transform .3s ease,box-shadow .3s ease;
+  position:relative;
+}
+.album-photo-item:hover{
+  transform:rotate(0deg) translateY(-5px) scale(1.03);
+  box-shadow:0 12px 32px rgba(58,37,32,.16);
+  z-index:2;
+}
+.album-photo-item:nth-child(4n+1){--tilt:-1deg;}
+.album-photo-item:nth-child(4n+2){--tilt:.8deg;}
+.album-photo-item:nth-child(4n+3){--tilt:-.6deg;}
+.album-photo-item:nth-child(4n+4){--tilt:1.2deg;}
+.album-photo-item img{
+  width:100%;aspect-ratio:1/1;object-fit:cover;display:block;
+}
+
+/* Pagination */
+.gallery-pagination{display:flex;align-items:center;justify-content:center;gap:.6rem;margin-top:2.5rem;flex-wrap:wrap;}
+.page-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:transparent;font-family:var(--sans);font-size:13px;color:var(--muted);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;}
 .page-btn:hover{border-color:var(--rose);color:var(--rose);}
 .page-btn.active{background:var(--rose);border-color:var(--rose);color:white;}
 .page-btn.prev-next{width:auto;padding:0 14px;border-radius:100px;font-size:12px;letter-spacing:.06em;}
@@ -487,13 +560,21 @@ footer p{font-size:12px;letter-spacing:.04em;}
         <button class="filter-btn" data-filter="milestones">Milestones</button>
       </div>
     </div>
-    <div class="gallery-grid" id="galleryGrid">
+    <!-- Albums list view -->
+    <div class="albums-grid" id="albumsGrid">
       <div class="gallery-empty" id="galleryEmpty">
         <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
-        <p>Your photos will appear here.<br>Click <strong>Add photos</strong> to get started.</p>
+        <p>Your albums will appear here.<br>Click <strong>Add photos</strong> to create your first album.</p>
       </div>
     </div>
-    <div class="gallery-pagination" id="galleryPagination"></div>
+    <!-- Open album view -->
+    <div class="album-open-view" id="albumOpenView">
+      <button class="album-back-btn" id="albumBackBtn">← All albums</button>
+      <h3 class="album-open-title" id="albumOpenTitle"></h3>
+      <p class="album-open-meta" id="albumOpenMeta"></p>
+      <div class="album-photos-grid" id="albumPhotosGrid"></div>
+      <div class="gallery-pagination" id="albumPagination"></div>
+    </div>
   </div>
 </section>
 
@@ -563,7 +644,7 @@ footer p{font-size:12px;letter-spacing:.04em;}
       <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
       <span id="progressText">Saving…</span>
     </div>
-    <label>Caption</label><input type="text" id="photoCaption" placeholder="What's this moment about?"/>
+    <label>Album title</label><input type="text" id="photoCaption" placeholder="e.g. Bohol Trip, Anniversary 2024"/>
     <label>Date</label><input type="text" id="photoDate" placeholder="e.g. June 2024"/>
     <label>Category</label>
     <select id="photoTag">
@@ -914,7 +995,7 @@ const DEFAULT_DATA = {
       { id:12, text:'Plant something together and watch it grow',     done:false },
     ]
   },
-  photos: []
+  albums: []
 };
 
 let D = ls('siteData', DEFAULT_DATA);
@@ -1561,95 +1642,146 @@ document.getElementById('saveNote').addEventListener('click', async () => {
 // ═══════════════════════════════════════════════════════
 //  GALLERY
 // ═══════════════════════════════════════════════════════
-let currentFilter = 'all';
+// ── ALBUM GALLERY ──────────────────────────────────────────────────────────
 function photoSrc(p) { return p.url || p.dataUrl || ''; }
 
-const PHOTOS_PER_PAGE = 12;
-let currentPage = 1;
-
-function filteredPhotos() {
-  return currentFilter === 'all' ? D.photos : D.photos.filter(p => p.tag === currentFilter);
+if (!D.albums) D.albums = [];
+// Migrate old flat photos array to a single album if needed
+if (D.photos && D.photos.length && !D.albums.length) {
+  D.albums = [{ id: Date.now(), title: 'Our memories', date: '', tag: 'all', photos: D.photos }];
 }
+
+let currentAlbumId = null;
+const PHOTOS_PER_PAGE = 12;
+let albumPage = 1;
 
 function renderGallery() {
-  const grid  = document.getElementById('galleryGrid');
-  const empty = document.getElementById('galleryEmpty');
-  const pagination = document.getElementById('galleryPagination');
-  grid.querySelectorAll('.gallery-item').forEach(el => el.remove());
+  const albumsGrid = document.getElementById('albumsGrid');
+  const openView   = document.getElementById('albumOpenView');
+  const empty      = document.getElementById('galleryEmpty');
 
-  const filtered = filteredPhotos();
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PHOTOS_PER_PAGE));
-
-  // Clamp currentPage
-  if (currentPage > totalPages) currentPage = totalPages;
-  if (currentPage < 1) currentPage = 1;
-
-  const start = (currentPage - 1) * PHOTOS_PER_PAGE;
-  const pagePhotos = filtered.slice(start, start + PHOTOS_PER_PAGE);
-
-  empty.style.display = filtered.length === 0 ? 'block' : 'none';
-  if (!grid.contains(empty)) grid.appendChild(empty);
-
-  pagePhotos.forEach(photo => {
-    const item = document.createElement('div');
-    item.className = 'gallery-item';
-    item.dataset.tag = photo.tag;
-    item.dataset.id  = photo.id;
-    const caption = photo.caption || 'a memory ♡';
-    const date    = photo.date    || '';
-    item.innerHTML =
-      '<img src="' + photoSrc(photo) + '" alt="' + caption + '" loading="lazy"/>' +
-      '<div class="polaroid-caption">' +
-        '<span class="polaroid-caption-text">' + caption + '</span>' +
-        (date ? '<span class="polaroid-date">' + date + '</span>' : '') +
-      '</div>';
-    item.addEventListener('click', () => openLightbox(photo.id));
-    grid.insertBefore(item, empty);
-  });
-
-  // Render pagination
-  pagination.innerHTML = '';
-  if (totalPages <= 1) return;
-
-  const prev = document.createElement('button');
-  prev.className = 'page-btn prev-next';
-  prev.textContent = '← Prev';
-  prev.disabled = currentPage === 1;
-  prev.addEventListener('click', () => { currentPage--; renderGallery(); grid.scrollIntoView({behavior:'smooth',block:'start'}); });
-  pagination.appendChild(prev);
-
-  // Page number buttons (show max 5)
-  const range = 2;
-  for (let i = 1; i <= totalPages; i++) {
-    if (i === 1 || i === totalPages || (i >= currentPage - range && i <= currentPage + range)) {
-      const btn = document.createElement('button');
-      btn.className = 'page-btn' + (i === currentPage ? ' active' : '');
-      btn.textContent = i;
-      btn.addEventListener('click', () => { currentPage = i; renderGallery(); grid.scrollIntoView({behavior:'smooth',block:'start'}); });
-      pagination.appendChild(btn);
-    } else if (i === currentPage - range - 1 || i === currentPage + range + 1) {
-      const dots = document.createElement('span');
-      dots.textContent = '…';
-      dots.style.cssText = 'color:var(--muted);font-size:13px;padding:0 4px;';
-      pagination.appendChild(dots);
-    }
+  if (currentAlbumId === null) {
+    albumsGrid.style.display = '';
+    openView.classList.remove('active');
+    albumsGrid.querySelectorAll('.album-card').forEach(el => el.remove());
+    const albums = D.albums || [];
+    empty.style.display = albums.length === 0 ? 'block' : 'none';
+    if (!albumsGrid.contains(empty)) albumsGrid.appendChild(empty);
+    albums.forEach(album => {
+      albumsGrid.insertBefore(makeAlbumCard(album), empty);
+    });
+  } else {
+    albumsGrid.style.display = 'none';
+    openView.classList.add('active');
+    renderAlbumPhotos();
   }
-
-  const next = document.createElement('button');
-  next.className = 'page-btn prev-next';
-  next.textContent = 'Next →';
-  next.disabled = currentPage === totalPages;
-  next.addEventListener('click', () => { currentPage++; renderGallery(); grid.scrollIntoView({behavior:'smooth',block:'start'}); });
-  pagination.appendChild(next);
 }
 
+function makeAlbumCard(album) {
+  const card  = document.createElement('div');
+  card.className = 'album-card';
+  const cover = album.photos && album.photos.length ? photoSrc(album.photos[0]) : '';
+  const count = album.photos ? album.photos.length : 0;
+  card.innerHTML =
+    '<div class="album-cover-wrap">' +
+      (cover
+        ? '<img src="' + cover + '" alt="' + (album.title||'') + '" loading="lazy"/>'
+        : '<div style="width:100%;height:100%;background:var(--blush);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--rose);">♡</div>') +
+      '<span class="album-count">' + count + ' photo' + (count !== 1 ? 's' : '') + '</span>' +
+      '<button class="album-delete edit-ctrl" title="Delete album">✕</button>' +
+    '</div>' +
+    '<div class="album-info">' +
+      '<div class="album-title">' + (album.title || 'Untitled album') + '</div>' +
+      (album.date ? '<div class="album-date">' + album.date + '</div>' : '') +
+    '</div>';
+  card.querySelector('.album-cover-wrap').addEventListener('click', () => {
+    if (!card.querySelector('.album-cover-wrap').querySelector('.album-delete').matches(':hover')) {
+      openAlbum(album.id);
+    }
+  });
+  card.querySelector('.album-info').addEventListener('click', () => openAlbum(album.id));
+  card.querySelector('.album-delete').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!confirm('Delete this entire album and all its photos?')) return;
+    D.albums = (D.albums || []).filter(a => a.id !== album.id);
+    ghSaveData(D);
+    renderGallery();
+  });
+  return card;
+}
+
+function openAlbum(albumId) {
+  currentAlbumId = albumId;
+  albumPage = 1;
+  const album = (D.albums || []).find(a => a.id === albumId);
+  if (!album) return;
+  document.getElementById('albumOpenTitle').textContent = album.title || 'Untitled album';
+  document.getElementById('albumOpenMeta').textContent =
+    (album.date ? album.date + ' · ' : '') + (album.photos ? album.photos.length : 0) + ' photos';
+  renderGallery();
+}
+
+function renderAlbumPhotos() {
+  const album  = (D.albums || []).find(a => a.id === currentAlbumId);
+  if (!album) return;
+  const grid   = document.getElementById('albumPhotosGrid');
+  const pagDiv = document.getElementById('albumPagination');
+  grid.innerHTML = '';
+  const photos     = album.photos || [];
+  const totalPages = Math.max(1, Math.ceil(photos.length / PHOTOS_PER_PAGE));
+  if (albumPage > totalPages) albumPage = totalPages;
+  const pagePhotos = photos.slice((albumPage-1)*PHOTOS_PER_PAGE, albumPage*PHOTOS_PER_PAGE);
+  pagePhotos.forEach((photo, idx) => {
+    const item = document.createElement('div');
+    item.className = 'album-photo-item';
+    item.innerHTML = '<img src="' + photoSrc(photo) + '" alt="" loading="lazy"/>';
+    item.addEventListener('click', () => openAlbumLightbox(album, (albumPage-1)*PHOTOS_PER_PAGE + idx));
+    grid.appendChild(item);
+  });
+  // Pagination
+  pagDiv.innerHTML = '';
+  if (totalPages <= 1) return;
+  const prev = document.createElement('button');
+  prev.className = 'page-btn prev-next'; prev.textContent = '← Prev'; prev.disabled = albumPage === 1;
+  prev.addEventListener('click', () => { albumPage--; renderAlbumPhotos(); grid.scrollIntoView({behavior:'smooth',block:'start'}); });
+  pagDiv.appendChild(prev);
+  for (let i = 1; i <= totalPages; i++) {
+    if (i===1||i===totalPages||(i>=albumPage-2&&i<=albumPage+2)){
+      const btn=document.createElement('button');
+      btn.className='page-btn'+(i===albumPage?' active':'');
+      btn.textContent=i;
+      btn.addEventListener('click',()=>{albumPage=i;renderAlbumPhotos();grid.scrollIntoView({behavior:'smooth',block:'start'});});
+      pagDiv.appendChild(btn);
+    } else if(i===albumPage-3||i===albumPage+3){
+      const d=document.createElement('span');d.textContent='…';d.style.cssText='color:var(--muted);font-size:13px;padding:0 4px;';pagDiv.appendChild(d);
+    }
+  }
+  const next = document.createElement('button');
+  next.className = 'page-btn prev-next'; next.textContent = 'Next →'; next.disabled = albumPage === totalPages;
+  next.addEventListener('click', () => { albumPage++; renderAlbumPhotos(); grid.scrollIntoView({behavior:'smooth',block:'start'}); });
+  pagDiv.appendChild(next);
+}
+
+document.getElementById('albumBackBtn').addEventListener('click', () => {
+  currentAlbumId = null;
+  renderGallery();
+  document.getElementById('gallery').scrollIntoView({behavior:'smooth', block:'start'});
+});
+
+// Filter buttons filter albums by tag
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    currentFilter = btn.dataset.filter;
-    currentPage = 1; // reset to first page on filter change
-    renderGallery();
+    const filter = btn.dataset.filter;
+    currentAlbumId = null;
+    const albumsGrid = document.getElementById('albumsGrid');
+    const empty      = document.getElementById('galleryEmpty');
+    albumsGrid.querySelectorAll('.album-card').forEach(el => el.remove());
+    const filtered = filter === 'all' ? (D.albums||[]) : (D.albums||[]).filter(a => a.tag === filter);
+    empty.style.display = filtered.length === 0 ? 'block' : 'none';
+    if (!albumsGrid.contains(empty)) albumsGrid.appendChild(empty);
+    filtered.forEach(album => albumsGrid.insertBefore(makeAlbumCard(album), empty));
   });
 });
 
@@ -1688,24 +1820,33 @@ function handleFiles(files) {
 
 document.getElementById('savePhotos').addEventListener('click', async () => {
   if (!stagedFiles.length) { alert('Please choose at least one photo first.'); return; }
-  const caption = document.getElementById('photoCaption').value.trim();
-  const date    = document.getElementById('photoDate').value.trim();
-  const tag     = document.getElementById('photoTag').value;
-  const prog = document.getElementById('uploadProgress');
-  const fill = document.getElementById('progressFill');
-  const txt  = document.getElementById('progressText');
+  const title = document.getElementById('photoCaption').value.trim() || 'Album ' + new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const date  = document.getElementById('photoDate').value.trim();
+  const tag   = document.getElementById('photoTag').value;
+  const prog  = document.getElementById('uploadProgress');
+  const fill  = document.getElementById('progressFill');
+  const txt   = document.getElementById('progressText');
   prog.classList.add('show');
+  // Create a new album
+  const album = { id: Date.now(), title, date, tag, photos: [] };
   let saved = 0;
   for (const staged of stagedFiles) {
     const compressed = await new Promise(res => compressImage(staged.dataUrl, 1200, .82, res));
     const filename   = 'photo_' + Date.now() + '_' + Math.floor(Math.random()*10000) + '.jpg';
-    const photoObj   = await ghSavePhoto(filename, compressed, caption, date, tag);
-    D.photos.unshift(photoObj); saved++;
+    const photoObj   = await ghSavePhoto(filename, compressed, title, date, tag);
+    album.photos.push(photoObj); saved++;
     fill.style.width = Math.round(saved / stagedFiles.length * 100) + '%';
     txt.textContent  = 'Uploading ' + saved + ' of ' + stagedFiles.length + '…';
   }
+  if (!D.albums) D.albums = [];
+  D.albums.unshift(album);
   await ghSaveData(D); renderGallery();
-  setTimeout(() => { prog.classList.remove('show'); fill.style.width='0%'; closeUploadModal(); document.getElementById('photoCaption').value=''; document.getElementById('photoDate').value=''; }, 400);
+  setTimeout(() => {
+    prog.classList.remove('show'); fill.style.width='0%';
+    closeUploadModal();
+    document.getElementById('photoCaption').value='';
+    document.getElementById('photoDate').value='';
+  }, 400);
 });
 
 function compressImage(dataUrl, maxW, quality, cb) {
@@ -1723,8 +1864,25 @@ function compressImage(dataUrl, maxW, quality, cb) {
 const lightbox = document.getElementById('lightbox');
 const lbImg    = document.getElementById('lbImg');
 let lbIndex    = 0;
-function openLightbox(id) { const list = filteredPhotos(); lbIndex = list.findIndex(p => p.id == id); if (lbIndex === -1) return; showLbSlide(list, lbIndex); lightbox.classList.add('open'); document.body.style.overflow = 'hidden'; }
-function showLbSlide(list, idx) { const p = list[idx]; lbImg.src = photoSrc(p); document.getElementById('lbCaption').textContent = p.caption || 'A memory'; document.getElementById('lbMeta').textContent = [p.date, p.tag].filter(Boolean).join(' · '); document.getElementById('lbCounter').textContent = (idx+1) + ' / ' + list.length; }
+// Album-aware lightbox
+let lbAlbumPhotos = [];
+function openAlbumLightbox(album, startIdx) {
+  lbAlbumPhotos = album.photos || [];
+  lbIndex = startIdx;
+  showLbSlide(lbAlbumPhotos, lbIndex);
+  document.getElementById('lbDelete').style.display = '';
+  document.getElementById('lbPrev').style.display = '';
+  document.getElementById('lbNext').style.display = '';
+  lightbox.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function showLbSlide(list, idx) {
+  const p = list[idx]; if (!p) return;
+  lbImg.src = photoSrc(p);
+  document.getElementById('lbCaption').textContent = p.caption || '';
+  document.getElementById('lbMeta').textContent = p.date || '';
+  document.getElementById('lbCounter').textContent = (idx+1) + ' / ' + list.length;
+}
 function closeLightbox() {
   lightbox.classList.remove('open');
   document.body.style.overflow = '';
@@ -1736,17 +1894,22 @@ function closeLightbox() {
 }
 document.getElementById('lbClose').addEventListener('click', closeLightbox);
 lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
-document.getElementById('lbPrev').addEventListener('click', () => { const l = filteredPhotos(); lbIndex = (lbIndex - 1 + l.length) % l.length; showLbSlide(l, lbIndex); });
-document.getElementById('lbNext').addEventListener('click', () => { const l = filteredPhotos(); lbIndex = (lbIndex + 1) % l.length; showLbSlide(l, lbIndex); });
+document.getElementById('lbPrev').addEventListener('click', () => { lbIndex = (lbIndex - 1 + lbAlbumPhotos.length) % lbAlbumPhotos.length; showLbSlide(lbAlbumPhotos, lbIndex); });
+document.getElementById('lbNext').addEventListener('click', () => { lbIndex = (lbIndex + 1) % lbAlbumPhotos.length; showLbSlide(lbAlbumPhotos, lbIndex); });
 document.addEventListener('keydown', e => { if (!lightbox.classList.contains('open')) return; if (e.key==='ArrowLeft') document.getElementById('lbPrev').click(); if (e.key==='ArrowRight') document.getElementById('lbNext').click(); if (e.key==='Escape') closeLightbox(); });
 document.getElementById('lbDelete').addEventListener('click', async () => {
   if (!confirm('Remove this photo?')) return;
-  const list = filteredPhotos(); const id = list[lbIndex].id;
-  D.photos = D.photos.filter(p => p.id != id);
-  await ghSaveData(D); renderGallery();
-  const nl = filteredPhotos();
-  if (!nl.length) { closeLightbox(); return; }
-  lbIndex = Math.min(lbIndex, nl.length - 1); showLbSlide(nl, lbIndex);
+  const photo = lbAlbumPhotos[lbIndex];
+  if (!photo) return;
+  // Remove from the current album
+  const album = (D.albums || []).find(a => a.id === currentAlbumId);
+  if (album) album.photos = album.photos.filter(p => p.id != photo.id);
+  lbAlbumPhotos = lbAlbumPhotos.filter(p => p.id != photo.id);
+  await ghSaveData(D);
+  renderAlbumPhotos();
+  if (!lbAlbumPhotos.length) { closeLightbox(); return; }
+  lbIndex = Math.min(lbIndex, lbAlbumPhotos.length - 1);
+  showLbSlide(lbAlbumPhotos, lbIndex);
 });
 
 // ═══════════════════════════════════════════════════════
