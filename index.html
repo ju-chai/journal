@@ -622,7 +622,7 @@ footer p{font-size:12px;letter-spacing:.04em;}
 
 // ── AUTO CACHE BUSTER ──────────────────────────────────────────
 // Bump SITE_VERSION any time you want all devices to force-refresh.
-const SITE_VERSION = '5';
+const SITE_VERSION = '6';
 if (localStorage.getItem('site_version') !== SITE_VERSION) {
   localStorage.removeItem('siteData');
   localStorage.setItem('site_version', SITE_VERSION);
@@ -912,7 +912,10 @@ async function unlockSite(plainPassword) {
   // Step 1: try to decrypt token from whatever D we have locally cached
   if (plainPassword && D.encryptedToken) {
     const tok = await decryptToken(D.encryptedToken, plainPassword);
-    if (tok) sessionStorage.setItem('gh_token_s', tok);
+    if (tok) {
+      sessionStorage.setItem('gh_token_s', tok);
+      localStorage.setItem('gh_token', tok); // persist across refreshes
+    }
   }
 
   // Dismiss lock screen
@@ -1120,7 +1123,10 @@ async function init() {
         const pp = sessionStorage.getItem('plain_pass_temp') || '';
         if (pp) {
           const tok = await decryptToken(D.encryptedToken, pp);
-          if (tok) sessionStorage.setItem('gh_token_s', tok);
+          if (tok) {
+            sessionStorage.setItem('gh_token_s', tok);
+            localStorage.setItem('gh_token', tok); // persist across refreshes
+          }
         }
       }
     }
@@ -1137,6 +1143,7 @@ async function init() {
           const tok = await decryptToken(D.encryptedToken, pp);
           if (tok) {
             sessionStorage.setItem('gh_token_s', tok);
+            localStorage.setItem('gh_token', tok); // persist across refreshes
             // Mark setup as done — this device bootstrapped successfully
             localStorage.setItem(SETUP_KEY, 'bootstrapped');
             setSyncStatus('ok', 'Synced');
