@@ -98,21 +98,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 .nav-links a{font-size:11px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s;}
 .nav-links a:hover{color:var(--warm);}
 .nav-right{display:flex;align-items:center;gap:.6rem;}
-.btn-icon{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;flex-shrink:0;}
-.btn-icon:hover{border-color:var(--rose);color:var(--rose);}
+
 .btn-edit-mode{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:100px;border:1px solid var(--border);background:transparent;font-family:var(--sans);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);cursor:pointer;transition:all .2s;}
 .btn-edit-mode:hover{border-color:var(--rose);color:var(--rose);}
 .btn-edit-mode.active{background:var(--rose);border-color:var(--rose);color:white;}
 .nav-toggle{display:none;background:none;border:none;cursor:pointer;flex-direction:column;gap:5px;padding:4px;}
 .nav-toggle span{display:block;width:22px;height:1.5px;background:var(--warm);border-radius:2px;}
 
-/* ── SYNC INDICATOR ── */
-#syncDot{width:8px;height:8px;border-radius:50%;background:var(--sage);transition:background .3s;flex-shrink:0;}
-#syncDot.syncing{background:#f0a500;animation:blink .7s ease-in-out infinite;}
-#syncDot.error{background:#c0392b;animation:none;}
-#syncDot.ok{background:var(--sage);}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
-#syncLabel{font-size:10px;letter-spacing:.08em;color:var(--muted);white-space:nowrap;}
+
 
 /* ── EDIT MODE ── */
 body.editing [data-editable]{outline:1.5px dashed rgba(201,133,122,.5);border-radius:3px;cursor:text;min-width:20px;display:inline-block;}
@@ -269,25 +262,7 @@ body.editing .bucket-add-row{display:flex;}
 .btn-save:hover{background:var(--roseDark);}
 .modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1;}
 
-/* ── SETTINGS PANEL ── */
-#settingsPanel{display:none;position:fixed;top:68px;right:1.2rem;z-index:150;background:var(--ivory);border:1px solid var(--border);border-radius:14px;padding:1.5rem;width:340px;box-shadow:0 8px 32px rgba(58,37,32,.12);}
-#settingsPanel.open{display:block;}
-#settingsPanel h4{font-family:var(--serif);font-size:20px;font-weight:300;margin-bottom:.3rem;color:var(--walnut);}
-#settingsPanel p{font-size:12px;color:var(--muted);margin-bottom:1.2rem;line-height:1.6;}
-#settingsPanel label{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem;margin-top:.8rem;}
-#settingsPanel input{width:100%;font-family:var(--sans);font-size:13px;padding:.5rem .8rem;border:1px solid var(--border);border-radius:6px;background:white;color:var(--walnut);outline:none;}
-#settingsPanel input:focus{border-color:var(--rose);}
-.settings-actions{display:flex;gap:.6rem;margin-top:1.2rem;}
-.btn-settings-save{flex:1;padding:.55rem;background:var(--rose);border:1px solid var(--rose);border-radius:100px;color:white;font-family:var(--sans);font-size:12px;cursor:pointer;transition:background .2s;}
-.btn-settings-save:hover{background:var(--roseDark);}
-.btn-settings-cancel{padding:.55rem 1rem;background:transparent;border:1px solid var(--border);border-radius:100px;color:var(--muted);font-family:var(--sans);font-size:12px;cursor:pointer;}
-.settings-status{font-size:11px;margin-top:.8rem;padding:.5rem .8rem;border-radius:6px;display:none;}
-.settings-status.ok{display:block;background:rgba(138,158,140,.15);color:#4a7a4c;}
-.settings-status.err{display:block;background:rgba(192,57,43,.1);color:#c0392b;}
-.settings-divider{height:1px;background:var(--border);margin:1rem 0;}
-.token-hint{font-size:11px;color:var(--muted);line-height:1.6;}
-.token-hint a{color:var(--rose);text-decoration:none;}
-.token-hint a:hover{text-decoration:underline;}
+
 
 /* ── FOOTER ── */
 footer{background:var(--walnut);color:rgba(255,255,255,.5);text-align:center;padding:3rem 1rem;}
@@ -302,7 +277,6 @@ footer p{font-size:12px;letter-spacing:.04em;}
   .nav-toggle{display:flex;}
   .section{padding:4rem 1.2rem;}
   .counter-sep{display:none;}
-  #settingsPanel{width:calc(100vw - 2.4rem);right:1.2rem;}
 }
 
 /* ── FADE-IN ── */
@@ -322,12 +296,8 @@ footer p{font-size:12px;letter-spacing:.04em;}
     <li><a href="#bucket" onclick="closeNav()">Bucket List</a></li>
   </ul>
   <div class="nav-right">
-    <div id="syncDot" class="ok" title="Sync status"></div>
-    <span id="syncLabel"></span>
-    <!-- Settings gear -->
-    <button class="btn-icon" id="settingsBtn" title="GitHub settings" aria-label="Settings">
-      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-    </button>
+
+
     <!-- Edit toggle -->
     <button class="btn-edit-mode" id="editToggle">
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
@@ -337,28 +307,7 @@ footer p{font-size:12px;letter-spacing:.04em;}
   </div>
 </nav>
 
-<!-- SETTINGS PANEL -->
-<div id="settingsPanel">
-  <h4>GitHub sync</h4>
-  <p>Your GitHub sync is <span id="ghStatusText">not configured</span>. Click below to run the setup wizard.</p>
-  <label>GitHub username</label>
-  <input type="text" id="ghUser" placeholder="e.g. yourname" autocomplete="off"/>
-  <label>Repository name</label>
-  <input type="text" id="ghRepo" placeholder="e.g. our-story" autocomplete="off"/>
-  <label>Branch</label>
-  <input type="text" id="ghBranch" placeholder="main" autocomplete="off"/>
-  <label>Personal Access Token</label>
-  <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off"/>
-  <div class="settings-divider"></div>
-  <div class="token-hint">
-    Need a token? Go to <a href="https://github.com/settings/tokens/new" target="_blank">GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens</a>. Give it <strong>Contents: Read & Write</strong> on your repo only. Make the repo <strong>private</strong> to keep your token safe.
-  </div>
-  <div class="settings-actions">
-    <button class="btn-settings-cancel" id="settingsCancel">Cancel</button>
-    <button class="btn-settings-save" id="settingsSave">Reconfigure →</button>
-  </div>
-  <div class="settings-status" id="settingsStatus"></div>
-</div>
+
 
 <!-- LOCK SCREEN -->
 <div id="lockScreen">
@@ -742,22 +691,16 @@ async function ghLoadDataPublic() {
   const user   = GH_USER;
   const repo   = GH_REPO;
   const branch = GH_BRANCH;
-  console.log('[bootstrap] user:', user, 'repo:', repo, 'branch:', branch);
   if (!user || !repo) {
-    console.log('[bootstrap] SKIPPED — no user/repo configured');
     return null;
   }
   try {
     const url = 'https://raw.githubusercontent.com/' + user + '/' + repo + '/' + branch + '/' + DATA_PATH + '?t=' + Date.now();
-    console.log('[bootstrap] fetching:', url);
     const r = await fetch(url);
-    console.log('[bootstrap] response status:', r.status);
     if (!r.ok) return null;
     const data = await r.json();
-    console.log('[bootstrap] data.json fetched. Has encryptedToken:', !!data.encryptedToken);
     return data;
   } catch(e) {
-    console.log('[bootstrap] fetch failed:', e.message);
     return null;
   }
 }
@@ -923,11 +866,8 @@ async function unlockSite(plainPassword) {
   if (plainPassword) sessionStorage.setItem('plain_pass_temp', plainPassword);
 
   // Step 1: try to decrypt token from whatever D we have locally cached
-  console.log('[unlock] plainPassword provided:', !!plainPassword);
-  console.log('[unlock] D.encryptedToken in local cache:', !!D.encryptedToken);
   if (plainPassword && D.encryptedToken) {
     const tok = await decryptToken(D.encryptedToken, plainPassword);
-    console.log('[unlock] Step 1 decrypt from cache:', tok ? 'SUCCESS' : 'failed');
     if (tok) sessionStorage.setItem('gh_token_s', tok);
   }
 
@@ -943,18 +883,14 @@ async function unlockSite(plainPassword) {
   await init();
 
   // Step 3: after init, if we successfully have a token, mark setup as done
-  console.log('[unlock] After init — ghReady():', ghReady(), '| wIsSetupDone():', wIsSetupDone());
   if (ghReady()) {
     localStorage.setItem(SETUP_KEY, 'bootstrapped');
     setSyncStatus('ok', 'Synced');
-    console.log('[unlock] Bootstrap complete! Token active, setup marked done.');
   } else {
-    console.log('[unlock] No token available after init. Checking if wizard needed...');
   }
 
   // Only show wizard if: no token anywhere AND setup not done
   const needsSetup = !ghReady() && !wIsSetupDone();
-  console.log('[unlock] needsSetup:', needsSetup);
   if (needsSetup) setTimeout(() => wOpen(), 900);
 }
 
@@ -1121,27 +1057,9 @@ async function wStep2Next() {
 
 function wFinish() { wClose(); }
 
-// ── Settings panel: clicking Reconfigure opens wizard ──
-document.getElementById('settingsSave').addEventListener('click', () => {
-  localStorage.removeItem(SETUP_KEY);
-  document.getElementById('settingsPanel').classList.remove('open');
-  wGoTo(0);
-  wOpen();
-});
 
-// ── Settings panel: change password link ──
-(function addChangePassLink() {
-  const panel = document.getElementById('settingsPanel');
-  if (!panel) return;
-  const div = document.createElement('div');
-  div.style.cssText = 'margin-top:.8rem;border-top:1px solid var(--border);padding-top:.8rem;';
-  div.innerHTML = '<button style="background:none;border:none;color:var(--rose);font-family:var(--sans);font-size:12px;cursor:pointer;letter-spacing:.04em;padding:0;" id="changePassBtn">Change site password</button>';
-  panel.appendChild(div);
-  document.getElementById('changePassBtn').addEventListener('click', () => {
-    document.getElementById('settingsPanel').classList.remove('open');
-    document.getElementById('setPasswordModal').classList.add('open');
-  });
-})();
+
+
 
 // ═══════════════════════════════════════════════════════
 //  INIT: load from GitHub, then render page
@@ -1170,12 +1088,9 @@ async function init() {
       lsSave('siteData', D);
       // If it has an encrypted token, decrypt it with the session password
       if (D.encryptedToken) {
-        console.log('[bootstrap] encryptedToken found in data.json, attempting decrypt...');
         const pp = sessionStorage.getItem('plain_pass_temp') || '';
-        console.log('[bootstrap] plain_pass_temp in sessionStorage:', pp ? 'yes (length ' + pp.length + ')' : 'NO — this is the problem!');
         if (pp) {
           const tok = await decryptToken(D.encryptedToken, pp);
-          console.log('[bootstrap] decryption result:', tok ? 'SUCCESS' : 'FAILED (wrong password?)');
           if (tok) {
             sessionStorage.setItem('gh_token_s', tok);
             // Mark setup as done — this device bootstrapped successfully
@@ -1184,9 +1099,6 @@ async function init() {
           }
         }
       } else {
-        console.log('[bootstrap] No encryptedToken in data.json — setup wizard will open.');
-        console.log('[bootstrap] This means data.json was saved before the token encryption feature was added.');
-        console.log('[bootstrap] Fix: go to Settings gear > Reconfigure on your main device and complete setup again.');
       }
     } else {
       setSyncStatus('ok', '');
@@ -1247,18 +1159,7 @@ const navLinks  = document.getElementById('navLinks');
 navToggle.addEventListener('click', () => navLinks.classList.toggle('open'));
 function closeNav() { navLinks.classList.remove('open'); }
 
-// Settings panel toggle
-const settingsPanel = document.getElementById('settingsPanel');
-document.getElementById('settingsBtn').addEventListener('click', e => {
-  e.stopPropagation();
-  settingsPanel.classList.toggle('open');
-  const connected = ghReady() ? 'connected' : 'not configured';
-  const st = document.getElementById('ghStatusText');
-  if (st) st.textContent = connected;
-});
-document.addEventListener('click', e => {
-  if (!settingsPanel.contains(e.target) && e.target.id !== 'settingsBtn') settingsPanel.classList.remove('open');
-});
+
 
 // ═══════════════════════════════════════════════════════
 //  INLINE TEXT EDITING
