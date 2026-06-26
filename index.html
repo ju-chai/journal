@@ -676,9 +676,9 @@ footer p{font-size:12px;letter-spacing:.04em;}
 // ═══════════════════════════════════════════════════════
 function ghCfg() {
   return {
-    user:   localStorage.getItem('gh_user')      || '',
-    repo:   localStorage.getItem('gh_repo')      || '',
-    branch: localStorage.getItem('gh_branch')    || 'main',
+    user:   localStorage.getItem('gh_user')      || GH_USER,
+    repo:   localStorage.getItem('gh_repo')      || GH_REPO,
+    branch: localStorage.getItem('gh_branch')    || GH_BRANCH,
     // Token lives in sessionStorage after decryption (or localStorage if set via wizard)
     token:  sessionStorage.getItem('gh_token_s') || localStorage.getItem('gh_token') || ''
   };
@@ -730,14 +730,21 @@ async function ghPutBinary(path, base64Data, message, sha) {
 
 const DATA_PATH = 'data.json';
 
+// ── HARDCODED REPO CONFIG ──────────────────────────────────────
+// These are safe to hardcode — they're just your public GitHub repo location.
+// The token inside data.json is encrypted and useless without the password.
+const GH_USER   = localStorage.getItem('gh_user')   || 'ju-chai';
+const GH_REPO   = localStorage.getItem('gh_repo')   || 'journal';
+const GH_BRANCH = localStorage.getItem('gh_branch') || 'main';
+
 async function ghLoadDataPublic() {
   // Fetch data.json via public raw URL — works without a token on public repos
-  const user   = localStorage.getItem('gh_user')   || '';
-  const repo   = localStorage.getItem('gh_repo')   || '';
-  const branch = localStorage.getItem('gh_branch') || 'main';
+  const user   = GH_USER;
+  const repo   = GH_REPO;
+  const branch = GH_BRANCH;
   console.log('[bootstrap] user:', user, 'repo:', repo, 'branch:', branch);
   if (!user || !repo) {
-    console.log('[bootstrap] SKIPPED — no user/repo saved in localStorage');
+    console.log('[bootstrap] SKIPPED — no user/repo configured');
     return null;
   }
   try {
@@ -867,6 +874,12 @@ D = mergeDefaults(D, DEFAULT_DATA);
 const PASS_KEY    = 'us_always_pass';
 const SESSION_KEY = 'us_always_session';
 const SETUP_KEY   = 'us_always_setup_done';
+
+// Pre-populate repo config in localStorage so wizard step 1 is pre-filled
+// and ghCfg always has a repo to work with
+if (!localStorage.getItem('gh_user'))   localStorage.setItem('gh_user',   GH_USER);
+if (!localStorage.getItem('gh_repo'))   localStorage.setItem('gh_repo',   GH_REPO);
+if (!localStorage.getItem('gh_branch')) localStorage.setItem('gh_branch', GH_BRANCH);
 
 async function hashPass(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str + 'us_always_salt_xo'));
