@@ -676,10 +676,11 @@ footer p{font-size:12px;letter-spacing:.04em;}
 // ═══════════════════════════════════════════════════════
 function ghCfg() {
   return {
-    user:   localStorage.getItem('gh_user')   || '',
-    repo:   localStorage.getItem('gh_repo')   || '',
-    branch: localStorage.getItem('gh_branch') || 'main',
-    token:  localStorage.getItem('gh_token')  || ''
+    user:   localStorage.getItem('gh_user')      || '',
+    repo:   localStorage.getItem('gh_repo')      || '',
+    branch: localStorage.getItem('gh_branch')    || 'main',
+    // Token lives in sessionStorage after decryption (or localStorage if set via wizard)
+    token:  sessionStorage.getItem('gh_token_s') || localStorage.getItem('gh_token') || ''
   };
 }
 function ghReady() { const c = ghCfg(); return !!(c.user && c.repo && c.token); }
@@ -844,14 +845,52 @@ async function hashPass(str) {
 function isUnlocked()   { return sessionStorage.getItem(SESSION_KEY) === 'yes'; }
 function wIsSetupDone() { return !!localStorage.getItem(SETUP_KEY); }
 
-function unlockSite() {
+// ── AES-GCM encrypt/decrypt using password as key ──
+async function deriveKey(password) {
+  const enc = new TextEncoder();
+  const raw = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt: enc.encode('us_always_salt_aes'), iterations:100000, hash:'SHA-256' },
+    raw, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']
+  );
+}
+async function encryptToken(token, password) {
+  const key = await deriveKey(password);
+  const iv  = crypto.getRandomValues(new Uint8Array(12));
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, enc.encode(token));
+  // Store as hex iv + ':' + hex ciphertext
+  const toHex = b => Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('');
+  return toHex(iv) + ':' + toHex(new Uint8Array(buf));
+}
+async function decryptToken(encrypted, password) {
+  try {
+    const [ivHex, ctHex] = encrypted.split(':');
+    const fromHex = h => new Uint8Array(h.match(/.{2}/g).map(b=>parseInt(b,16)));
+    const key = await deriveKey(password);
+    const buf = await crypto.subtle.decrypt({ name:'AES-GCM', iv: fromHex(ivHex) }, key, fromHex(ctHex));
+    return new TextDecoder().decode(buf);
+  } catch { return null; }
+}
+
+async function unlockSite(plainPassword) {
   sessionStorage.setItem(SESSION_KEY, 'yes');
+  // If site data has an encrypted token, decrypt it now and store in sessionStorage
+  if (plainPassword && D.encryptedToken) {
+    const tok = await decryptToken(D.encryptedToken, plainPassword);
+    if (tok) sessionStorage.setItem('gh_token_s', tok);
+  }
   const ls = document.getElementById('lockScreen');
   if (ls) {
     ls.classList.add('unlocked');
     setTimeout(() => { if (ls.parentNode) ls.parentNode.removeChild(ls); }, 700);
   }
-  init();
+  await init();
+  // After init, try again — init may have loaded D.encryptedToken from GitHub
+  if (plainPassword && D.encryptedToken && !sessionStorage.getItem('gh_token_s')) {
+    const tok = await decryptToken(D.encryptedToken, plainPassword);
+    if (tok) sessionStorage.setItem('gh_token_s', tok);
+  }
   if (!wIsSetupDone()) setTimeout(() => wOpen(), 900);
 }
 
@@ -883,7 +922,9 @@ document.getElementById('confirmSetPass').addEventListener('click', async () => 
   document.getElementById('newPass1').value = '';
   document.getElementById('newPass2').value = '';
   document.getElementById('setPasswordModal').classList.remove('open');
-  unlockSite();
+  // Store plain password temporarily in sessionStorage so unlockSite can use it
+  sessionStorage.setItem('plain_pass_temp', p1);
+  unlockSite(p1);
 });
 
 // ── Main lock logic ──
@@ -904,7 +945,8 @@ if (isUnlocked()) {
     if (!val) return;
     const hashed = await hashPass(val);
     if (hashed === localStorage.getItem(PASS_KEY)) {
-      unlockSite();
+      sessionStorage.setItem('plain_pass_temp', val);
+      unlockSite(val);
     } else {
       const inp = document.getElementById('lockInput');
       inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake');
@@ -994,6 +1036,12 @@ async function wStep2Next() {
     if (!r.ok) throw new Error('GitHub returned ' + r.status);
     localStorage.setItem('gh_token', token);
     localStorage.setItem(SETUP_KEY, 'done');
+    sessionStorage.setItem('gh_token_s', token);
+    // Encrypt token with the site password and embed in data.json
+    const plainPass = sessionStorage.getItem('plain_pass_temp') || '';
+    if (plainPass) {
+      D.encryptedToken = await encryptToken(token, plainPass);
+    }
     setSyncStatus('ok', 'Connected');
     testing.classList.remove('show');
     btn.disabled = false;
@@ -1035,9 +1083,34 @@ document.getElementById('settingsSave').addEventListener('click', () => {
 //  INIT: load from GitHub, then render page
 // ═══════════════════════════════════════════════════════
 async function init() {
+  // First load: try fetching with whatever token we have (may be from localStorage)
   if (ghReady()) {
     const remote = await ghLoadData();
-    if (remote) { D = mergeDefaults(remote, DEFAULT_DATA); lsSave('siteData', D); }
+    if (remote) {
+      D = mergeDefaults(remote, DEFAULT_DATA);
+      lsSave('siteData', D);
+      // If loaded data has an encrypted token, decrypt it using the session password
+      if (D.encryptedToken && !sessionStorage.getItem('gh_token_s')) {
+        const pp = sessionStorage.getItem('plain_pass_temp') || '';
+        if (pp) {
+          const tok = await decryptToken(D.encryptedToken, pp);
+          if (tok) sessionStorage.setItem('gh_token_s', tok);
+        }
+      }
+    }
+  } else if (D.encryptedToken) {
+    // No token in storage yet — try to decrypt from cached local data
+    const pp = sessionStorage.getItem('plain_pass_temp') || '';
+    if (pp) {
+      const tok = await decryptToken(D.encryptedToken, pp);
+      if (tok) {
+        sessionStorage.setItem('gh_token_s', tok);
+        // Now we have a token — try loading from GitHub
+        const remote = await ghLoadData();
+        if (remote) { D = mergeDefaults(remote, DEFAULT_DATA); lsSave('siteData', D); }
+      }
+    }
+    setSyncStatus('ok', '');
   } else {
     setSyncStatus('ok', '');
   }
