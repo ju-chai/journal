@@ -629,7 +629,7 @@ footer p{font-size:12px;letter-spacing:.04em;}
 
 // ── AUTO CACHE BUSTER ──────────────────────────────────────────
 // Bump SITE_VERSION any time you want all devices to force-refresh.
-const SITE_VERSION = '8';
+const SITE_VERSION = '9';
 if (localStorage.getItem('site_version') !== SITE_VERSION) {
   localStorage.removeItem('siteData');
   localStorage.setItem('site_version', SITE_VERSION);
@@ -638,16 +638,105 @@ if (localStorage.getItem('site_version') !== SITE_VERSION) {
 // ═══════════════════════════════════════════════════════
 //  GITHUB API
 // ═══════════════════════════════════════════════════════
+// Data (notes, timeline, bucket list, text edits) is stored in a GitHub Gist.
+// Gist updates are instant — no Pages deployment triggered.
+// Photos are still committed to the repo (binary files need the repo).
+
 function ghCfg() {
   return {
     user:   localStorage.getItem('gh_user')      || GH_USER,
     repo:   localStorage.getItem('gh_repo')      || GH_REPO,
     branch: localStorage.getItem('gh_branch')    || GH_BRANCH,
-    // Token lives in sessionStorage after decryption (or localStorage if set via wizard)
-    token:  sessionStorage.getItem('gh_token_s') || localStorage.getItem('gh_token') || ''
+    token:  sessionStorage.getItem('gh_token_s') || localStorage.getItem('gh_token') || '',
+    gistId: localStorage.getItem('gh_gist_id')  || sessionStorage.getItem('gh_gist_id_s') || (typeof D !== 'undefined' && D.gistId) || ''
   };
 }
-function ghReady() { const c = ghCfg(); return !!(c.user && c.repo && c.token); }
+function ghReady()   { const c = ghCfg(); return !!(c.user && c.repo && c.token); }
+function gistReady() { const c = ghCfg(); return !!(c.token && c.gistId); }
+
+// ── GIST API ──────────────────────────────────────────
+// Save a tiny pointer file to the repo containing just the Gist ID.
+// This only runs ONCE during setup — no further repo commits happen.
+async function saveGistPointer(token, gistId) {
+  try {
+    const user   = localStorage.getItem('gh_user')   || GH_USER;
+    const repo   = localStorage.getItem('gh_repo')   || GH_REPO;
+    const branch = localStorage.getItem('gh_branch') || GH_BRANCH;
+    const content = JSON.stringify({ gistId }, null, 2);
+    const encoded = btoa(unescape(encodeURIComponent(content)));
+    // Check if pointer already exists (need its SHA to update)
+    const checkR = await fetch(
+      'https://api.github.com/repos/' + user + '/' + repo + '/contents/gist-pointer.json?ref=' + branch + '&t=' + Date.now(),
+      { headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' } }
+    );
+    const body = { message: 'Setup: save gist pointer', content: encoded, branch };
+    if (checkR.ok) { const existing = await checkR.json(); body.sha = existing.sha; }
+    await fetch(
+      'https://api.github.com/repos/' + user + '/' + repo + '/contents/gist-pointer.json',
+      {
+        method: 'PUT',
+        headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }
+    );
+  } catch(e) { /* non-critical — data is already in Gist */ }
+}
+// Read data from Gist (public — no token needed)
+async function gistLoad() {
+  // Get gistId from localStorage (most reliable source on bootstrap)
+  const gistId = localStorage.getItem('gh_gist_id')
+               || sessionStorage.getItem('gh_gist_id_s')
+               || (typeof D !== 'undefined' && D.gistId)
+               || '';
+  if (!gistId) return null;
+  try {
+    const r = await fetch('https://api.github.com/gists/' + gistId + '?t=' + Date.now(), {
+      headers: { 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (!r.ok) return null;
+    const json = await r.json();
+    const file = json.files && json.files['data.json'];
+    if (!file) return null;
+    return JSON.parse(file.content);
+  } catch(e) { return null; }
+}
+
+// Write data to Gist (requires token)
+async function gistSave(data) {
+  const cfg = ghCfg();
+  const body = { files: { 'data.json': { content: JSON.stringify(data, null, 2) } } };
+  const r = await fetch('https://api.github.com/gists/' + cfg.gistId, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': 'token ' + cfg.token,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'Gist save failed'); }
+  return r.json();
+}
+
+// Create a new Gist on first setup
+async function gistCreate(token, initialData) {
+  const r = await fetch('https://api.github.com/gists', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'token ' + token,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      description: 'us-always site data',
+      public: false,
+      files: { 'data.json': { content: JSON.stringify(initialData, null, 2) } }
+    })
+  });
+  if (!r.ok) { const e = await r.json(); throw new Error(e.message || 'Gist create failed'); }
+  const json = await r.json();
+  return json.id; // the gist ID to store
+}
 
 function setSyncStatus(state, text) {
   const dot = document.getElementById('syncDot');
@@ -702,43 +791,44 @@ const GH_REPO   = localStorage.getItem('gh_repo')   || 'journal';
 const GH_BRANCH = localStorage.getItem('gh_branch') || 'main';
 
 async function ghLoadDataPublic() {
-  // Fetch data.json via public raw URL — works without a token on public repos
-  const user   = GH_USER;
-  const repo   = GH_REPO;
-  const branch = GH_BRANCH;
-  if (!user || !repo) {
-    return null;
+  // Step 1: If we already have gistId, load directly from Gist
+  const knownGistId = localStorage.getItem('gh_gist_id')
+                    || sessionStorage.getItem('gh_gist_id_s')
+                    || (typeof D !== 'undefined' && D.gistId)
+                    || '';
+  if (knownGistId) {
+    const data = await gistLoad();
+    if (data) return data;
   }
+
+  // Step 2: Bootstrap — fetch gist pointer from repo (public raw URL, no token needed)
   try {
-    const url = 'https://raw.githubusercontent.com/' + user + '/' + repo + '/' + branch + '/' + DATA_PATH + '?t=' + Date.now();
+    const url = 'https://raw.githubusercontent.com/' + GH_USER + '/' + GH_REPO
+              + '/' + GH_BRANCH + '/gist-pointer.json?t=' + Date.now();
     const r = await fetch(url);
-    if (!r.ok) return null;
-    const data = await r.json();
-    return data;
-  } catch(e) {
-    return null;
-  }
+    if (r.ok) {
+      const pointer = await r.json();
+      if (pointer.gistId) {
+        localStorage.setItem('gh_gist_id', pointer.gistId);
+        sessionStorage.setItem('gh_gist_id_s', pointer.gistId);
+        // Now load actual data from Gist
+        const data = await gistLoad();
+        if (data) return data;
+      }
+    }
+  } catch(e) { /* pointer not found yet */ }
+
+  return null;
 }
 
 async function ghLoadData() {
-  // Try public raw URL first (works on all devices without token)
   setSyncStatus('syncing', 'Loading…');
   try {
     const data = await ghLoadDataPublic();
     if (data) { setSyncStatus('ok', 'Synced'); return data; }
-  } catch(e) { /* fall through to authenticated */ }
-  // Fall back to authenticated API (needed on private repos)
-  if (!ghReady()) { setSyncStatus('ok', ''); return null; }
-  try {
-    const file = await ghGet(DATA_PATH);
-    if (!file) return null;
-    const json = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
-    setSyncStatus('ok', 'Synced');
-    return JSON.parse(json);
-  } catch(e) {
-    setSyncStatus('error', 'Offline');
-    return null;
-  }
+  } catch(e) { /* fall through */ }
+  setSyncStatus('ok', '');
+  return null;
 }
 
 async function ghGetSHA(path) {
@@ -774,30 +864,17 @@ function showToast(msg, type, duration) {
 
 async function ghSaveData(data) {
   lsSave('siteData', data); // always save locally first
-  if (!ghReady()) {
-    showToast('Saved locally — GitHub not connected', 'error', 4000);
+  if (!gistReady()) {
+    showToast('Saved locally — not synced yet', 'error', 4000);
     return;
   }
-  showToast('Saving to GitHub…', 'saving', 60000); // stays until replaced
-  const MAX_RETRIES = 3;
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const sha = await ghGetSHA(DATA_PATH);
-      await ghPut(DATA_PATH, JSON.stringify(data, null, 2), 'Update site data', sha);
-      showToast('Saved to GitHub ✓', 'success', 3000);
-      applyTexts(); // ensure DOM reflects saved state
-      return;
-    } catch(e) {
-      const msg = e.message || '';
-      const isMismatch = msg.includes('does not match') || msg.includes('409') || msg.includes('conflict');
-      if (isMismatch && attempt < MAX_RETRIES) {
-        showToast('Retrying save… (' + attempt + '/' + MAX_RETRIES + ')', 'saving', 60000);
-        await new Promise(res => setTimeout(res, 600 * attempt));
-        continue;
-      }
-      showToast('Save failed: ' + msg, 'error', 6000);
-      return;
-    }
+  showToast('Saving…', 'saving', 60000);
+  try {
+    await gistSave(data);
+    showToast('Saved ✓', 'success', 3000);
+    applyTexts();
+  } catch(e) {
+    showToast('Save failed: ' + (e.message || 'unknown error'), 'error', 6000);
   }
 }
 
@@ -928,7 +1005,14 @@ async function unlockSite(plainPassword) {
     const tok = await decryptToken(D.encryptedToken, plainPassword);
     if (tok) {
       sessionStorage.setItem('gh_token_s', tok);
-      localStorage.setItem('gh_token', tok); // persist across refreshes
+      localStorage.setItem('gh_token', tok);
+      // Also decrypt gistId if available
+      if (D.encryptedGistId) {
+        const gid = await decryptToken(D.encryptedGistId, plainPassword);
+        if (gid) { sessionStorage.setItem('gh_gist_id_s', gid); localStorage.setItem('gh_gist_id', gid); }
+      } else if (D.gistId) {
+        sessionStorage.setItem('gh_gist_id_s', D.gistId); localStorage.setItem('gh_gist_id', D.gistId);
+      }
     }
   }
 
@@ -1098,16 +1182,37 @@ async function wStep2Next() {
     localStorage.setItem('gh_token', token);
     localStorage.setItem(SETUP_KEY, 'done');
     sessionStorage.setItem('gh_token_s', token);
-    // Encrypt token with the site password and embed in data.json
+
+    // Create a Gist to store all site data (avoids triggering Pages deployment on every save)
+    const testing2 = document.getElementById('wTesting');
+    const span = testing2.querySelector('span');
+    if (span) span.textContent = 'Creating data store…';
+
+    let gistId = localStorage.getItem('gh_gist_id') || '';
+    if (!gistId) {
+      gistId = await gistCreate(token, D);
+      localStorage.setItem('gh_gist_id', gistId);
+    }
+
+    // Encrypt both token AND gist ID with the site password
     const plainPass = sessionStorage.getItem('plain_pass_temp') || '';
     if (plainPass) {
-      D.encryptedToken = await encryptToken(token, plainPass);
+      D.encryptedToken  = await encryptToken(token, plainPass);
+      D.encryptedGistId = await encryptToken(gistId, plainPass);
     }
+    D.gistId = gistId; // also store plain for devices that already have the token
+
+    // Save data to Gist
+    await gistSave(D);
+
+    // Save a tiny pointer file to the repo so new devices can find the Gist
+    // This is the ONLY commit to the repo — happens once during setup
+    await saveGistPointer(token, gistId);
+
     setSyncStatus('ok', 'Connected');
     testing.classList.remove('show');
     btn.disabled = false;
     wGoTo(3);
-    await ghSaveData(D);
   } catch(e) {
     testing.classList.remove('show');
     btn.disabled = false;
@@ -1132,6 +1237,11 @@ async function init() {
     if (remote) {
       D = mergeDefaults(remote, DEFAULT_DATA);
       lsSave('siteData', D);
+      // Store plain gistId immediately if available
+      if (D.gistId && !localStorage.getItem('gh_gist_id')) {
+        localStorage.setItem('gh_gist_id', D.gistId);
+        sessionStorage.setItem('gh_gist_id_s', D.gistId);
+      }
       // If loaded data has an encrypted token, decrypt it using the session password
       if (D.encryptedToken && !sessionStorage.getItem('gh_token_s')) {
         const pp = sessionStorage.getItem('plain_pass_temp') || '';
@@ -1139,7 +1249,13 @@ async function init() {
           const tok = await decryptToken(D.encryptedToken, pp);
           if (tok) {
             sessionStorage.setItem('gh_token_s', tok);
-            localStorage.setItem('gh_token', tok); // persist across refreshes
+            localStorage.setItem('gh_token', tok);
+            if (D.encryptedGistId) {
+              const gid = await decryptToken(D.encryptedGistId, pp);
+              if (gid) { sessionStorage.setItem('gh_gist_id_s', gid); localStorage.setItem('gh_gist_id', gid); }
+            } else if (D.gistId) {
+              sessionStorage.setItem('gh_gist_id_s', D.gistId); localStorage.setItem('gh_gist_id', D.gistId);
+            }
           }
         }
       }
@@ -1157,7 +1273,13 @@ async function init() {
           const tok = await decryptToken(D.encryptedToken, pp);
           if (tok) {
             sessionStorage.setItem('gh_token_s', tok);
-            localStorage.setItem('gh_token', tok); // persist across refreshes
+            localStorage.setItem('gh_token', tok);
+            if (D.encryptedGistId) {
+              const gid = await decryptToken(D.encryptedGistId, pp);
+              if (gid) { sessionStorage.setItem('gh_gist_id_s', gid); localStorage.setItem('gh_gist_id', gid); }
+            } else if (D.gistId) {
+              sessionStorage.setItem('gh_gist_id_s', D.gistId); localStorage.setItem('gh_gist_id', D.gistId);
+            }
             // Mark setup as done — this device bootstrapped successfully
             localStorage.setItem(SETUP_KEY, 'bootstrapped');
             setSyncStatus('ok', 'Synced');
