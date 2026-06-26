@@ -998,11 +998,23 @@ async function unlockSite(plainPassword) {
   // and decrypts the token from it if we don't have one yet
   await init();
 
-  // Step 3: after init, if we successfully have a token, mark setup as done
+  // Step 3: after init, if we have a working token, persist it to localStorage
+  // so it survives page refreshes and tab closes on this device
   if (ghReady()) {
-    localStorage.setItem(SETUP_KEY, 'bootstrapped');
+    const tok = sessionStorage.getItem('gh_token_s');
+    if (tok) localStorage.setItem('gh_token', tok);
+    const gid = sessionStorage.getItem('gh_gist_id_s');
+    if (gid) localStorage.setItem('gh_gist_id', gid);
     setSyncStatus('ok', 'Synced');
-  } else {
+    // If Gist data is missing encryptedToken, save it now so future devices can bootstrap
+    if (plainPassword && D && !D.encryptedToken) {
+      try {
+        D.encryptedToken  = await encryptToken(tok, plainPassword);
+        D.encryptedGistId = await encryptToken(gid || '', plainPassword);
+        D.gistId = gid || '';
+        await gistSave(D);
+      } catch(e) { /* non-critical */ }
+    }
   }
 
   // GitHub sync bootstraps automatically via gist-pointer.json
@@ -1166,8 +1178,8 @@ async function init() {
             } else if (D.gistId) {
               sessionStorage.setItem('gh_gist_id_s', D.gistId); localStorage.setItem('gh_gist_id', D.gistId);
             }
-            // Mark setup as done — this device bootstrapped successfully
-            localStorage.setItem(SETUP_KEY, 'bootstrapped');
+            // Persist to localStorage so it survives refreshes
+            localStorage.setItem('gh_token', tok);
             setSyncStatus('ok', 'Synced');
           }
         }
