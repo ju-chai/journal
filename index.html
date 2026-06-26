@@ -732,18 +732,25 @@ const DATA_PATH = 'data.json';
 
 async function ghLoadDataPublic() {
   // Fetch data.json via public raw URL — works without a token on public repos
-  // This is how new devices bootstrap themselves
-  const cfg = ghCfg();
-  const user   = cfg.user   || localStorage.getItem('gh_user')   || '';
-  const repo   = cfg.repo   || localStorage.getItem('gh_repo')   || '';
-  const branch = cfg.branch || localStorage.getItem('gh_branch') || 'main';
-  if (!user || !repo) return null;
+  const user   = localStorage.getItem('gh_user')   || '';
+  const repo   = localStorage.getItem('gh_repo')   || '';
+  const branch = localStorage.getItem('gh_branch') || 'main';
+  console.log('[bootstrap] user:', user, 'repo:', repo, 'branch:', branch);
+  if (!user || !repo) {
+    console.log('[bootstrap] SKIPPED — no user/repo saved in localStorage');
+    return null;
+  }
   try {
-    const url = 'https://raw.githubusercontent.com/' + user + '/' + repo + '/' + branch + '/' + DATA_PATH;
-    const r = await fetch(url + '?t=' + Date.now()); // cache-bust
+    const url = 'https://raw.githubusercontent.com/' + user + '/' + repo + '/' + branch + '/' + DATA_PATH + '?t=' + Date.now();
+    console.log('[bootstrap] fetching:', url);
+    const r = await fetch(url);
+    console.log('[bootstrap] response status:', r.status);
     if (!r.ok) return null;
-    return await r.json();
+    const data = await r.json();
+    console.log('[bootstrap] data.json fetched. Has encryptedToken:', !!data.encryptedToken);
+    return data;
   } catch(e) {
+    console.log('[bootstrap] fetch failed:', e.message);
     return null;
   }
 }
@@ -899,22 +906,43 @@ async function decryptToken(encrypted, password) {
 
 async function unlockSite(plainPassword) {
   sessionStorage.setItem(SESSION_KEY, 'yes');
-  // If site data has an encrypted token, decrypt it now and store in sessionStorage
+  // Store plain password in session so init() can use it to decrypt the token
+  if (plainPassword) sessionStorage.setItem('plain_pass_temp', plainPassword);
+
+  // Step 1: try to decrypt token from whatever D we have locally cached
+  console.log('[unlock] plainPassword provided:', !!plainPassword);
+  console.log('[unlock] D.encryptedToken in local cache:', !!D.encryptedToken);
   if (plainPassword && D.encryptedToken) {
     const tok = await decryptToken(D.encryptedToken, plainPassword);
+    console.log('[unlock] Step 1 decrypt from cache:', tok ? 'SUCCESS' : 'failed');
     if (tok) sessionStorage.setItem('gh_token_s', tok);
   }
+
+  // Dismiss lock screen
   const ls = document.getElementById('lockScreen');
   if (ls) {
     ls.classList.add('unlocked');
     setTimeout(() => { if (ls.parentNode) ls.parentNode.removeChild(ls); }, 700);
   }
+
+  // Step 2: run init — this fetches fresh data.json from GitHub (public URL)
+  // and decrypts the token from it if we don't have one yet
   await init();
-  // After init, we may now have the token — update sync status
+
+  // Step 3: after init, if we successfully have a token, mark setup as done
+  console.log('[unlock] After init — ghReady():', ghReady(), '| wIsSetupDone():', wIsSetupDone());
   if (ghReady()) {
+    localStorage.setItem(SETUP_KEY, 'bootstrapped');
     setSyncStatus('ok', 'Synced');
+    console.log('[unlock] Bootstrap complete! Token active, setup marked done.');
+  } else {
+    console.log('[unlock] No token available after init. Checking if wizard needed...');
   }
-  if (!wIsSetupDone()) setTimeout(() => wOpen(), 900);
+
+  // Only show wizard if: no token anywhere AND setup not done
+  const needsSetup = !ghReady() && !wIsSetupDone();
+  console.log('[unlock] needsSetup:', needsSetup);
+  if (needsSetup) setTimeout(() => wOpen(), 900);
 }
 
 // Petals on lock screen
@@ -1129,14 +1157,23 @@ async function init() {
       lsSave('siteData', D);
       // If it has an encrypted token, decrypt it with the session password
       if (D.encryptedToken) {
+        console.log('[bootstrap] encryptedToken found in data.json, attempting decrypt...');
         const pp = sessionStorage.getItem('plain_pass_temp') || '';
+        console.log('[bootstrap] plain_pass_temp in sessionStorage:', pp ? 'yes (length ' + pp.length + ')' : 'NO — this is the problem!');
         if (pp) {
           const tok = await decryptToken(D.encryptedToken, pp);
+          console.log('[bootstrap] decryption result:', tok ? 'SUCCESS' : 'FAILED (wrong password?)');
           if (tok) {
             sessionStorage.setItem('gh_token_s', tok);
+            // Mark setup as done — this device bootstrapped successfully
+            localStorage.setItem(SETUP_KEY, 'bootstrapped');
             setSyncStatus('ok', 'Synced');
           }
         }
+      } else {
+        console.log('[bootstrap] No encryptedToken in data.json — setup wizard will open.');
+        console.log('[bootstrap] This means data.json was saved before the token encryption feature was added.');
+        console.log('[bootstrap] Fix: go to Settings gear > Reconfigure on your main device and complete setup again.');
       }
     } else {
       setSyncStatus('ok', '');
