@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Us, Always</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ivory:#fdf8f4;--cream:#f5ede5;--blush:#f0ddd5;
+  --rose:#c9857a;--roseDark:#a3635a;--walnut:#3a2520;
+  --warm:#7a4f3a;--muted:#9e7d72;--sage:#8a9e8c;--sagePale:#d4e0d5;
+  --border:rgba(58,37,32,0.1);
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);background:var(--ivory);color:var(--walnut);font-size:15px;line-height:1.65;overflow-x:hidden;}
+img{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--cream);}
+::-webkit-scrollbar-thumb{background:var(--blush);border-radius:10px;}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:60px;background:rgba(253,248,244,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+.nav-logo{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--warm);letter-spacing:.02em;text-decoration:none;}
+.nav-links{display:flex;gap:1.5rem;list-style:none;align-items:center;}
+.nav-links a{font-size:11px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s;}
+.nav-links a:hover{color:var(--warm);}
+.nav-right{display:flex;align-items:center;gap:.6rem;}
+.btn-icon{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;flex-shrink:0;}
+.btn-icon:hover{border-color:var(--rose);color:var(--rose);}
+.btn-edit-mode{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:100px;border:1px solid var(--border);background:transparent;font-family:var(--sans);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);cursor:pointer;transition:all .2s;}
+.btn-edit-mode:hover{border-color:var(--rose);color:var(--rose);}
+.btn-edit-mode.active{background:var(--rose);border-color:var(--rose);color:white;}
+.nav-toggle{display:none;background:none;border:none;cursor:pointer;flex-direction:column;gap:5px;padding:4px;}
+.nav-toggle span{display:block;width:22px;height:1.5px;background:var(--warm);border-radius:2px;}
+
+/* ── SYNC INDICATOR ── */
+#syncDot{width:8px;height:8px;border-radius:50%;background:var(--sage);transition:background .3s;flex-shrink:0;}
+#syncDot.syncing{background:#f0a500;animation:blink .7s ease-in-out infinite;}
+#syncDot.error{background:#c0392b;animation:none;}
+#syncDot.ok{background:var(--sage);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+#syncLabel{font-size:10px;letter-spacing:.08em;color:var(--muted);white-space:nowrap;}
+
+/* ── EDIT MODE ── */
+body.editing [data-editable]{outline:1.5px dashed rgba(201,133,122,.5);border-radius:3px;cursor:text;min-width:20px;display:inline-block;}
+body.editing [data-editable]:hover{outline-color:var(--rose);background:rgba(201,133,122,.05);}
+body.editing [data-editable]:focus{outline:1.5px solid var(--rose);background:rgba(201,133,122,.07);}
+body.editing [data-editable="block"]{display:block;}
+.edit-ctrl{display:none;}
+body.editing .edit-ctrl{display:inline-flex;}
+#editBanner{display:none;position:fixed;bottom:1.4rem;left:50%;transform:translateX(-50%);z-index:500;background:var(--walnut);color:white;padding:.55rem 1.4rem;border-radius:100px;font-size:12px;letter-spacing:.06em;white-space:nowrap;pointer-events:none;box-shadow:0 4px 20px rgba(58,37,32,.3);}
+body.editing #editBanner{display:block;}
+
+/* ── HERO ── */
+#hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:5rem 2rem 3rem;position:relative;overflow:hidden;}
+.hero-bg-petals{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.petal{position:absolute;width:6px;height:6px;border-radius:50% 50% 50% 0;background:var(--blush);opacity:0;animation:fall linear infinite;}
+@keyframes fall{0%{transform:translateY(-20px) rotate(0deg);opacity:.6;}100%{transform:translateY(110vh) rotate(720deg);opacity:0;}}
+.hero-eyebrow{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--sage);margin-bottom:1.2rem;font-weight:400;}
+.hero-title{font-family:var(--serif);font-size:clamp(46px,9vw,90px);font-weight:300;color:var(--walnut);line-height:1.05;margin-bottom:1rem;}
+.hero-title em{font-style:italic;color:var(--rose);}
+.hero-subtitle{font-size:14px;color:var(--muted);font-weight:300;letter-spacing:.04em;margin-bottom:2.5rem;}
+.divider-line{display:flex;align-items:center;gap:1.2rem;margin-bottom:2.5rem;justify-content:center;}
+.divider-line .line{width:60px;height:.5px;background:var(--rose);opacity:.5;}
+.divider-line .diamond{width:6px;height:6px;background:var(--rose);transform:rotate(45deg);opacity:.7;}
+.counter-wrap{display:flex;gap:1.5rem;justify-content:center;margin-bottom:2.5rem;flex-wrap:wrap;}
+.counter-block{display:flex;flex-direction:column;align-items:center;}
+.counter-num{font-family:var(--serif);font-size:clamp(36px,6vw,58px);font-weight:300;color:var(--warm);line-height:1;min-width:1.8ch;text-align:center;}
+.counter-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+.counter-sep{font-family:var(--serif);font-size:40px;color:var(--blush);align-self:center;line-height:1;padding-bottom:10px;}
+.heartbeat{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;border:1px solid var(--rose);color:var(--rose);font-size:18px;animation:pulse 2.2s ease-in-out infinite;text-decoration:none;margin-top:.5rem;}
+@keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(201,133,122,.3);}50%{transform:scale(1.08);box-shadow:0 0 0 10px rgba(201,133,122,0);}}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted);font-size:10px;letter-spacing:.15em;text-transform:uppercase;animation:bob 2s ease-in-out infinite;}
+.scroll-hint::after{content:'';display:block;width:1px;height:36px;background:linear-gradient(to bottom,var(--rose),transparent);}
+@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(6px);}}
+.anniversary-row{display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:2rem;}
+.anniversary-label{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--muted);}
+
+/* ── SECTIONS ── */
+.section{padding:6rem 2rem;max-width:1100px;margin:0 auto;}
+.section-label{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--sage);margin-bottom:.6rem;}
+.section-heading{font-family:var(--serif);font-size:clamp(32px,5vw,52px);font-weight:300;color:var(--walnut);line-height:1.1;margin-bottom:2.5rem;}
+.section-heading em{font-style:italic;color:var(--rose);}
+.full-bleed{background:var(--cream);}
+
+/* ── GALLERY ── */
+.gallery-actions{display:flex;align-items:center;gap:1rem;margin-bottom:2rem;flex-wrap:wrap;}
+.btn-upload{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1.4rem;background:var(--rose);border:1px solid var(--rose);border-radius:100px;color:white;font-family:var(--sans);font-size:12px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background .2s;}
+.btn-upload:hover{background:var(--roseDark);}
+.gallery-filter{display:flex;gap:.5rem;flex-wrap:wrap;}
+.filter-btn{font-family:var(--sans);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 16px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;}
+.filter-btn:hover,.filter-btn.active{background:var(--rose);border-color:var(--rose);color:white;}
+.gallery-grid{columns:3;gap:12px;}
+@media(max-width:700px){.gallery-grid{columns:2;}}
+@media(max-width:440px){.gallery-grid{columns:1;}}
+.gallery-item{break-inside:avoid;margin-bottom:12px;position:relative;border-radius:8px;overflow:hidden;cursor:pointer;}
+.gallery-item .overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(40,20,15,.7) 0%,transparent 55%);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;justify-content:flex-end;padding:1rem;}
+.gallery-item:hover .overlay{opacity:1;}
+.overlay-caption{font-family:var(--serif);font-style:italic;font-size:15px;color:white;line-height:1.3;}
+.overlay-date{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-top:2px;}
+.gallery-empty{display:none;text-align:center;padding:3rem 1rem;color:var(--muted);}
+.gallery-empty svg{opacity:.3;margin-bottom:.8rem;}
+
+/* ── UPLOAD MODAL ── */
+.drop-zone{border:1.5px dashed var(--rose);border-radius:10px;padding:2rem 1rem;text-align:center;cursor:pointer;transition:background .2s;margin-bottom:1rem;}
+.drop-zone.dragover{background:rgba(201,133,122,.07);}
+.drop-zone input[type="file"]{display:none;}
+.drop-zone p{font-size:13px;color:var(--muted);}
+.drop-zone strong{color:var(--warm);}
+.preview-strip{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.preview-thumb{position:relative;width:68px;height:68px;border-radius:6px;overflow:hidden;flex-shrink:0;}
+.preview-thumb img{width:100%;height:100%;object-fit:cover;}
+.preview-thumb .rm{position:absolute;top:2px;right:2px;width:17px;height:17px;border-radius:50%;background:rgba(40,20,15,.7);color:white;font-size:10px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.upload-progress{display:none;align-items:center;gap:.6rem;font-size:12px;color:var(--muted);margin-bottom:.8rem;}
+.upload-progress.show{display:flex;}
+.progress-bar-track{flex:1;height:3px;background:var(--blush);border-radius:10px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--rose);border-radius:10px;transition:width .3s;width:0%;}
+
+/* ── LIGHTBOX ── */
+#lightbox{display:none;position:fixed;inset:0;z-index:300;background:rgba(20,10,8,.93);align-items:center;justify-content:center;flex-direction:column;padding:1rem;}
+#lightbox.open{display:flex;}
+#lightbox img{max-width:min(90vw,860px);max-height:72vh;object-fit:contain;border-radius:6px;display:block;width:auto;height:auto;}
+.lb-caption{font-family:var(--serif);font-style:italic;font-size:18px;color:rgba(255,255,255,.85);margin-top:1.2rem;text-align:center;}
+.lb-meta{font-size:11px;color:rgba(255,255,255,.4);margin-top:.3rem;letter-spacing:.1em;text-transform:uppercase;}
+.lb-close{position:absolute;top:1.2rem;right:1.4rem;background:none;border:none;color:rgba(255,255,255,.5);font-size:28px;cursor:pointer;line-height:1;}
+.lb-close:hover{color:white;}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.1);border:none;color:white;width:44px;height:44px;border-radius:50%;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;}
+.lb-nav:hover{background:rgba(255,255,255,.2);}
+.lb-prev{left:1.2rem;}.lb-next{right:1.2rem;}
+.lb-delete{position:absolute;bottom:1.5rem;right:1.5rem;background:rgba(180,60,50,.7);border:none;color:white;padding:6px 14px;border-radius:100px;font-size:11px;font-family:var(--sans);cursor:pointer;}
+.lb-counter{position:absolute;bottom:1.5rem;left:1.5rem;font-size:11px;color:rgba(255,255,255,.3);letter-spacing:.1em;}
+
+/* ── TIMELINE ── */
+.timeline{position:relative;padding-left:2rem;}
+.timeline::before{content:'';position:absolute;left:0;top:6px;bottom:0;width:1px;background:linear-gradient(to bottom,var(--rose),var(--blush),transparent);}
+.tl-item{position:relative;padding-bottom:3rem;padding-left:2rem;}
+.tl-item:last-child{padding-bottom:0;}
+.tl-dot{position:absolute;left:-2rem;top:5px;transform:translateX(-50%);width:11px;height:11px;border-radius:50%;background:var(--rose);border:2px solid var(--ivory);box-shadow:0 0 0 1px var(--rose);}
+.tl-dot.future{background:var(--ivory);border-color:var(--rose);box-shadow:0 0 0 1px var(--blush);}
+.tl-year{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--sage);margin-bottom:.3rem;}
+.tl-title{font-family:var(--serif);font-size:24px;font-weight:400;color:var(--walnut);margin-bottom:.4rem;}
+.tl-desc{font-size:14px;color:var(--muted);font-weight:300;max-width:500px;line-height:1.7;}
+.tl-badge{display:inline-block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:100px;background:var(--sagePale);color:var(--sage);margin-bottom:.5rem;}
+.tl-badge.milestone{background:rgba(201,133,122,.12);color:var(--roseDark);}
+.tl-remove{background:none;border:none;cursor:pointer;color:var(--blush);font-size:14px;padding:2px 5px;border-radius:4px;transition:color .2s;line-height:1;vertical-align:middle;margin-left:6px;}
+.tl-remove:hover{color:#c0392b;}
+.btn-add-tl{display:inline-flex;align-items:center;gap:.5rem;margin-top:2rem;padding:.6rem 1.4rem;background:transparent;border:1px solid var(--rose);border-radius:100px;color:var(--rose);font-family:var(--sans);font-size:12px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.btn-add-tl:hover{background:var(--rose);color:white;}
+
+/* ── LOVE NOTES ── */
+.notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.2rem;}
+.note-card{background:white;border:1px solid var(--border);border-radius:10px;padding:1.5rem;position:relative;transition:transform .25s,box-shadow .25s;}
+.note-card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(58,37,32,.07);}
+.note-card::before{content:'\201C';font-family:var(--serif);font-size:60px;color:var(--blush);position:absolute;top:.2rem;left:.8rem;line-height:1;pointer-events:none;}
+.note-tag{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage);margin-bottom:.8rem;display:block;}
+.note-text{font-family:var(--serif);font-style:italic;font-size:18px;color:var(--walnut);line-height:1.5;margin-bottom:1rem;}
+.note-from{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:.7rem;}
+.note-from strong{color:var(--warm);font-weight:500;}
+.note-remove{position:absolute;top:.6rem;right:.7rem;background:none;border:none;font-size:15px;color:var(--blush);cursor:pointer;transition:color .2s;display:none;}
+body.editing .note-remove{display:block;}
+.note-remove:hover{color:#c0392b;}
+.note-add-btn{display:flex;align-items:center;gap:.5rem;margin-top:2rem;padding:.75rem 1.5rem;background:transparent;border:1px solid var(--rose);border-radius:100px;color:var(--rose);font-family:var(--sans);font-size:12px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.note-add-btn:hover{background:var(--rose);color:white;}
+
+/* ── BUCKET LIST ── */
+.bucket-cols{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;}
+@media(max-width:600px){.bucket-cols{grid-template-columns:1fr;}}
+.bucket-group h4{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--sage);margin-bottom:.8rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);}
+.bucket-item{display:flex;align-items:flex-start;gap:.75rem;padding:.65rem 0;border-bottom:1px solid rgba(58,37,32,.05);}
+.bucket-item:last-child{border-bottom:none;}
+.bucket-check{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--blush);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;transition:all .2s;cursor:pointer;}
+.bucket-item.done .bucket-check{background:var(--sage);border-color:var(--sage);}
+.bucket-item.done .bucket-check::after{content:'✓';}
+.bucket-text{font-size:14px;color:var(--walnut);font-weight:300;line-height:1.5;flex:1;}
+.bucket-item.done .bucket-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--sage);}
+.bucket-remove{background:none;border:none;color:var(--blush);font-size:13px;cursor:pointer;padding:0 4px;display:none;transition:color .2s;flex-shrink:0;margin-top:3px;}
+body.editing .bucket-remove{display:inline;}
+.bucket-remove:hover{color:#c0392b;}
+.bucket-add-row{display:none;gap:6px;margin-top:.5rem;}
+body.editing .bucket-add-row{display:flex;}
+.bucket-add-input{flex:1;font-family:var(--sans);font-size:13px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:white;color:var(--walnut);outline:none;}
+.bucket-add-input:focus{border-color:var(--rose);}
+.bucket-add-submit{background:var(--rose);border:none;color:white;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:var(--sans);}
+
+/* ── MODALS ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(40,20,15,.55);z-index:200;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--ivory);border-radius:14px;padding:2rem;width:100%;max-width:480px;position:relative;max-height:90vh;overflow-y:auto;}
+.modal h3{font-family:var(--serif);font-size:26px;font-weight:300;margin-bottom:1.2rem;color:var(--walnut);}
+.modal label{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;}
+.modal input,.modal textarea,.modal select{width:100%;font-family:var(--sans);font-size:14px;padding:.6rem .9rem;border:1px solid var(--border);border-radius:6px;background:white;color:var(--walnut);margin-bottom:1rem;resize:vertical;outline:none;}
+.modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--rose);}
+.modal-actions{display:flex;gap:.8rem;justify-content:flex-end;margin-top:.5rem;}
+.btn-cancel{padding:.55rem 1.2rem;background:transparent;border:1px solid var(--border);border-radius:100px;color:var(--muted);font-family:var(--sans);font-size:12px;cursor:pointer;}
+.btn-save{padding:.55rem 1.4rem;background:var(--rose);border:1px solid var(--rose);border-radius:100px;color:white;font-family:var(--sans);font-size:12px;cursor:pointer;}
+.btn-save:hover{background:var(--roseDark);}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1;}
+
+/* ── SETTINGS PANEL ── */
+#settingsPanel{display:none;position:fixed;top:68px;right:1.2rem;z-index:150;background:var(--ivory);border:1px solid var(--border);border-radius:14px;padding:1.5rem;width:340px;box-shadow:0 8px 32px rgba(58,37,32,.12);}
+#settingsPanel.open{display:block;}
+#settingsPanel h4{font-family:var(--serif);font-size:20px;font-weight:300;margin-bottom:.3rem;color:var(--walnut);}
+#settingsPanel p{font-size:12px;color:var(--muted);margin-bottom:1.2rem;line-height:1.6;}
+#settingsPanel label{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem;margin-top:.8rem;}
+#settingsPanel input{width:100%;font-family:var(--sans);font-size:13px;padding:.5rem .8rem;border:1px solid var(--border);border-radius:6px;background:white;color:var(--walnut);outline:none;}
+#settingsPanel input:focus{border-color:var(--rose);}
+.settings-actions{display:flex;gap:.6rem;margin-top:1.2rem;}
+.btn-settings-save{flex:1;padding:.55rem;background:var(--rose);border:1px solid var(--rose);border-radius:100px;color:white;font-family:var(--sans);font-size:12px;cursor:pointer;transition:background .2s;}
+.btn-settings-save:hover{background:var(--roseDark);}
+.btn-settings-cancel{padding:.55rem 1rem;background:transparent;border:1px solid var(--border);border-radius:100px;color:var(--muted);font-family:var(--sans);font-size:12px;cursor:pointer;}
+.settings-status{font-size:11px;margin-top:.8rem;padding:.5rem .8rem;border-radius:6px;display:none;}
+.settings-status.ok{display:block;background:rgba(138,158,140,.15);color:#4a7a4c;}
+.settings-status.err{display:block;background:rgba(192,57,43,.1);color:#c0392b;}
+.settings-divider{height:1px;background:var(--border);margin:1rem 0;}
+.token-hint{font-size:11px;color:var(--muted);line-height:1.6;}
+.token-hint a{color:var(--rose);text-decoration:none;}
+.token-hint a:hover{text-decoration:underline;}
+
+/* ── FOOTER ── */
+footer{background:var(--walnut);color:rgba(255,255,255,.5);text-align:center;padding:3rem 1rem;}
+footer .footer-heart{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--rose);margin-bottom:.5rem;}
+footer p{font-size:12px;letter-spacing:.04em;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:640px){
+  nav{padding:0 1.2rem;}
+  .nav-links{display:none;flex-direction:column;gap:.5rem;}
+  .nav-links.open{display:flex;position:fixed;top:60px;left:0;right:0;background:var(--ivory);padding:1.5rem;border-bottom:1px solid var(--border);z-index:99;}
+  .nav-toggle{display:flex;}
+  .section{padding:4rem 1.2rem;}
+  .counter-sep{display:none;}
+  #settingsPanel{width:calc(100vw - 2.4rem);right:1.2rem;}
+}
+
+/* ── FADE-IN ── */
+.fade-in{opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease;}
+.fade-in.visible{opacity:1;transform:none;}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#hero" class="nav-logo" data-editable data-key="siteTitle">us, always ♡</a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#gallery" onclick="closeNav()">Gallery</a></li>
+    <li><a href="#timeline" onclick="closeNav()">Timeline</a></li>
+    <li><a href="#notes" onclick="closeNav()">Love Notes</a></li>
+    <li><a href="#bucket" onclick="closeNav()">Bucket List</a></li>
+  </ul>
+  <div class="nav-right">
+    <div id="syncDot" class="ok" title="Sync status"></div>
+    <span id="syncLabel"></span>
+    <!-- Settings gear -->
+    <button class="btn-icon" id="settingsBtn" title="GitHub settings" aria-label="Settings">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    </button>
+    <!-- Edit toggle -->
+    <button class="btn-edit-mode" id="editToggle">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
+      Edit
+    </button>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<!-- SETTINGS PANEL -->
+<div id="settingsPanel">
+  <h4>GitHub sync</h4>
+  <p>Connect your GitHub repo so all edits and photos are saved there and shared across devices.</p>
+  <label>GitHub username</label>
+  <input type="text" id="ghUser" placeholder="e.g. yourname" autocomplete="off"/>
+  <label>Repository name</label>
+  <input type="text" id="ghRepo" placeholder="e.g. our-story" autocomplete="off"/>
+  <label>Branch</label>
+  <input type="text" id="ghBranch" placeholder="main" autocomplete="off"/>
+  <label>Personal Access Token</label>
+  <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off"/>
+  <div class="settings-divider"></div>
+  <div class="token-hint">
+    Need a token? Go to <a href="https://github.com/settings/tokens/new" target="_blank">GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens</a>. Give it <strong>Contents: Read & Write</strong> on your repo only. Make the repo <strong>private</strong> to keep your token safe.
+  </div>
+  <div class="settings-actions">
+    <button class="btn-settings-cancel" id="settingsCancel">Cancel</button>
+    <button class="btn-settings-save" id="settingsSave">Test &amp; save</button>
+  </div>
+  <div class="settings-status" id="settingsStatus"></div>
+</div>
+
+<!-- EDIT BANNER -->
+<div id="editBanner">✏️ Edit mode — click any text to edit · click Done to save to GitHub</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg-petals" id="petals"></div>
+  <p class="hero-eyebrow" data-editable data-key="heroEyebrow">our little world</p>
+  <h1 class="hero-title">
+    <span data-editable data-key="heroLine1">Every moment</span><br>
+    with you is <em data-editable data-key="heroLine2">my<br>favorite</em>
+  </h1>
+  <p class="hero-subtitle" data-editable="block" data-key="heroSub">A private space just for the two of us</p>
+  <div class="divider-line"><div class="line"></div><div class="diamond"></div><div class="line"></div></div>
+  <div class="counter-wrap">
+    <div class="counter-block"><span class="counter-num" id="cnt-years">0</span><span class="counter-label">years</span></div>
+    <div class="counter-sep">·</div>
+    <div class="counter-block"><span class="counter-num" id="cnt-months">0</span><span class="counter-label">months</span></div>
+    <div class="counter-sep">·</div>
+    <div class="counter-block"><span class="counter-num" id="cnt-days">0</span><span class="counter-label">days</span></div>
+    <div class="counter-sep">·</div>
+    <div class="counter-block"><span class="counter-num" id="cnt-hours">0</span><span class="counter-label">hours</span></div>
+  </div>
+  <div class="anniversary-row">
+    <span class="anniversary-label">together since</span>
+    <span class="anniversary-label" data-editable data-key="anniversaryText">June 14, 2023</span>
+    <span class="edit-ctrl" style="align-items:center;gap:6px;font-size:12px;color:var(--muted);">
+      · change: <input type="date" id="anniversaryDateInput" style="font-size:12px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:white;color:var(--walnut);outline:none;font-family:var(--sans);"/>
+    </span>
+  </div>
+  <a href="#gallery" class="heartbeat" aria-label="Scroll down">♡</a>
+  <div class="scroll-hint">scroll</div>
+</section>
+
+<!-- GALLERY -->
+<section id="gallery" class="full-bleed">
+  <div class="section fade-in">
+    <p class="section-label" data-editable data-key="galLabel">Memories</p>
+    <h2 class="section-heading"><span data-editable data-key="galTitle1">Our</span> <em data-editable data-key="galTitle2">favorite</em><br><span data-editable data-key="galTitle3">moments</span></h2>
+    <div class="gallery-actions">
+      <button class="btn-upload" id="openUploadModal">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+        Add photos
+      </button>
+      <div class="gallery-filter">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="travel">Travel</button>
+        <button class="filter-btn" data-filter="dates">Dates</button>
+        <button class="filter-btn" data-filter="everyday">Everyday</button>
+        <button class="filter-btn" data-filter="milestones">Milestones</button>
+      </div>
+    </div>
+    <div class="gallery-grid" id="galleryGrid">
+      <div class="gallery-empty" id="galleryEmpty">
+        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+        <p>Your photos will appear here.<br>Click <strong>Add photos</strong> to get started.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section id="timeline">
+  <div class="section fade-in">
+    <p class="section-label" data-editable data-key="tlLabel">Our Story</p>
+    <h2 class="section-heading"><span data-editable data-key="tlTitle1">How we</span> <em data-editable data-key="tlTitle2">began</em></h2>
+    <div class="timeline" id="timelineList"></div>
+    <button class="btn-add-tl edit-ctrl" id="addTlBtn" style="margin-top:2rem;">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+      Add milestone
+    </button>
+  </div>
+</section>
+
+<!-- LOVE NOTES -->
+<section id="notes" class="full-bleed">
+  <div class="section fade-in">
+    <p class="section-label" data-editable data-key="notesLabel">Letters</p>
+    <h2 class="section-heading"><span data-editable data-key="notesTitle1">Things I</span> <em data-editable data-key="notesTitle2">want</em><br><span data-editable data-key="notesTitle3">you to know</span></h2>
+    <div class="notes-grid" id="notesGrid"></div>
+    <button class="note-add-btn" id="openNoteModal">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+      Add a note
+    </button>
+  </div>
+</section>
+
+<!-- BUCKET LIST -->
+<section id="bucket">
+  <div class="section fade-in">
+    <p class="section-label" data-editable data-key="bucketLabel">Dreams</p>
+    <h2 class="section-heading"><span data-editable data-key="bucketTitle1">Our</span> <em data-editable data-key="bucketTitle2">bucket list</em></h2>
+    <div class="bucket-cols">
+      <div class="bucket-group">
+        <h4>Places to go</h4>
+        <div id="bucket-travel"></div>
+        <div class="bucket-add-row"><input class="bucket-add-input" id="addTravel" placeholder="Add a place…"/><button class="bucket-add-submit" onclick="addBucketItem('travel','addTravel')">Add</button></div>
+      </div>
+      <div class="bucket-group">
+        <h4>Things to do together</h4>
+        <div id="bucket-experiences"></div>
+        <div class="bucket-add-row"><input class="bucket-add-input" id="addExp" placeholder="Add something to do…"/><button class="bucket-add-submit" onclick="addBucketItem('experiences','addExp')">Add</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-heart" data-editable data-key="footerHeart">us, always ♡</div>
+  <p data-editable="block" data-key="footerSub">Made with love · just for the two of us</p>
+</footer>
+
+<!-- UPLOAD MODAL -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <button class="modal-close" id="closeUploadModal">×</button>
+    <h3>Add a memory</h3>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="photoFileInput" accept="image/*" multiple/>
+      <svg width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto .6rem;display:block;color:var(--rose);"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+      <p><strong>Drag &amp; drop photos here</strong><br>or click to browse</p>
+    </div>
+    <div class="preview-strip" id="previewStrip"></div>
+    <div class="upload-progress" id="uploadProgress">
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+      <span id="progressText">Saving…</span>
+    </div>
+    <label>Caption</label><input type="text" id="photoCaption" placeholder="What's this moment about?"/>
+    <label>Date</label><input type="text" id="photoDate" placeholder="e.g. June 2024"/>
+    <label>Category</label>
+    <select id="photoTag">
+      <option value="milestones">Milestones</option><option value="travel">Travel</option>
+      <option value="dates">Dates</option><option value="everyday">Everyday</option>
+    </select>
+    <div class="modal-actions"><button class="btn-cancel" id="cancelUpload">Cancel</button><button class="btn-save" id="savePhotos">Save to gallery</button></div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <button class="lb-close" id="lbClose">×</button>
+  <button class="lb-nav lb-prev" id="lbPrev">&#8249;</button>
+  <img id="lbImg" src="" alt=""/>
+  <button class="lb-nav lb-next" id="lbNext">&#8250;</button>
+  <div class="lb-caption" id="lbCaption"></div>
+  <div class="lb-meta" id="lbMeta"></div>
+  <div class="lb-counter" id="lbCounter"></div>
+  <button class="lb-delete" id="lbDelete">Remove photo</button>
+</div>
+
+<!-- ADD NOTE MODAL -->
+<div class="modal-overlay" id="noteModal">
+  <div class="modal">
+    <button class="modal-close" id="closeNoteModal">×</button>
+    <h3>Add a love note</h3>
+    <label>From</label>
+    <select id="noteFrom"><option value="you">From you</option><option value="her">From her</option><option value="both of us">From both of us</option></select>
+    <label>Tag</label>
+    <select id="noteTag"><option>To her</option><option>To him</option><option>To us</option><option>A memory</option><option>A feeling</option></select>
+    <label>Your note</label>
+    <textarea id="noteText" rows="4" placeholder="Write something from the heart…"></textarea>
+    <div class="modal-actions"><button class="btn-cancel" id="cancelNote">Cancel</button><button class="btn-save" id="saveNote">Save note</button></div>
+  </div>
+</div>
+
+<!-- ADD TIMELINE MODAL -->
+<div class="modal-overlay" id="tlModal">
+  <div class="modal">
+    <button class="modal-close" id="closeTlModal">×</button>
+    <h3>Add a milestone</h3>
+    <label>Date / Year</label><input type="text" id="tlDate" placeholder="e.g. June 2024"/>
+    <label>Title</label><input type="text" id="tlTitle" placeholder="e.g. First trip together"/>
+    <label>Description</label><textarea id="tlDesc" rows="3" placeholder="Tell the story of this moment…"></textarea>
+    <label>Badge</label>
+    <select id="tlBadge"><option value="">None</option><option value="milestone">Milestone</option><option value="moment">A moment</option><option value="growing">Growing together</option><option value="beginning">The beginning</option></select>
+    <div class="modal-actions"><button class="btn-cancel" id="cancelTl">Cancel</button><button class="btn-save" id="saveTl">Add to timeline</button></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════════════
+//  GITHUB API
+// ═══════════════════════════════════════════════════════════════
+function ghCfg(){
+  return {
+    user:  localStorage.getItem('gh_user')   || '',
+    repo:  localStorage.getItem('gh_repo')   || '',
+    branch:localStorage.getItem('gh_branch') || 'main',
+    token: localStorage.getItem('gh_token')  || ''
+  };
+}
+function ghReady(){ const c=ghCfg(); return !!(c.user&&c.repo&&c.token); }
+
+function setSyncStatus(state, text){
+  const dot=document.getElementById('syncDot');
+  const lbl=document.getElementById('syncLabel');
+  dot.className=state; // 'ok','syncing','error'
+  lbl.textContent=text||'';
+}
+
+async function ghGet(path){
+  const c=ghCfg();
+  const r=await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/contents/${path}?ref=${c.branch}`,{
+    headers:{'Authorization':'token '+c.token,'Accept':'application/vnd.github.v3+json'}
+  });
+  if(r.status===404) return null;
+  if(!r.ok) throw new Error('GitHub GET failed: '+r.status);
+  return r.json();
+}
+
+async function ghPut(path, content, message, sha){
+  const c=ghCfg();
+  const body={message, content:btoa(unescape(encodeURIComponent(content))), branch:c.branch};
+  if(sha) body.sha=sha;
+  const r=await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/contents/${path}`,{
+    method:'PUT',
+    headers:{'Authorization':'token '+c.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  if(!r.ok){const e=await r.json();throw new Error(e.message||'GitHub PUT failed');}
+  return r.json();
+}
+
+async function ghPutBinary(path, base64Data, message, sha){
+  // base64Data is already a base64 string (without data:... prefix)
+  const c=ghCfg();
+  const body={message, content:base64Data, branch:c.branch};
+  if(sha) body.sha=sha;
+  const r=await fetch(`https://api.github.com/repos/${c.user}/${c.repo}/contents/${path}`,{
+    method:'PUT',
+    headers:{'Authorization':'token '+c.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  if(!r.ok){const e=await r.json();throw new Error(e.message||'GitHub PUT failed');}
+  return r.json();
+}
+
+const DATA_PATH = 'data.json';
+
+async function ghLoadData(){
+  if(!ghReady()) return null;
+  try{
+    setSyncStatus('syncing','Loading…');
+    const file=await ghGet(DATA_PATH);
+    if(!file) return null;
+    const json=decodeURIComponent(escape(atob(file.content.replace(/\n/g,''))));
+    setSyncStatus('ok','Synced');
+    return JSON.parse(json);
+  }catch(e){
+    setSyncStatus('error','Offline');
+    console.warn('GitHub load failed:',e);
+    return null;
+  }
+}
+
+async function ghSaveData(data){
+  if(!ghReady()){
+    lsSave('siteData', data);
+    return;
+  }
+  setSyncStatus('syncing','Saving…');
+  try{
+    const existing=await ghGet(DATA_PATH);
+    const sha=existing?existing.sha:undefined;
+    const json=JSON.stringify(data, null, 2);
+    await ghPut(DATA_PATH, json, '💾 Update site data', sha);
+    lsSave('siteData', data); // keep local copy too
+    setSyncStatus('ok','Saved ✓');
+    setTimeout(()=>setSyncStatus('ok',''),2500);
+  }catch(e){
+    setSyncStatus('error','Save failed');
+    console.error('GitHub save failed:',e);
+    alert('Could not save to GitHub: '+e.message+'\n\nYour changes are saved locally as a backup.');
+    lsSave('siteData', data);
+  }
+}
+
+async function ghSavePhoto(filename, base64data, caption, date, tag){
+  // base64data = dataURL like "data:image/jpeg;base64,/9j/..."
+  const b64=base64data.split(',')[1];
+  const path='images/'+filename;
+  if(!ghReady()) return {localOnly:true, dataUrl:base64data, id:Date.now()+Math.random(), caption, date, tag};
+  setSyncStatus('syncing','Uploading photo…');
+  try{
+    const existing=await ghGet(path);
+    const sha=existing?existing.sha:undefined;
+    await ghPutBinary(path, b64, '📸 Add photo: '+filename, sha);
+    const c=ghCfg();
+    // Return a GitHub raw URL so the image is served from GitHub
+    const url=`https://raw.githubusercontent.com/${c.user}/${c.repo}/${c.branch}/${path}`;
+    setSyncStatus('ok','Photo saved ✓');
+    return {id:Date.now()+Math.random(), url, caption, date, tag};
+  }catch(e){
+    setSyncStatus('error','Photo upload failed');
+    console.error(e);
+    alert('Photo upload failed: '+e.message+'\n\nSaving locally as fallback.');
+    return {id:Date.now()+Math.random(), dataUrl:base64data, caption, date, tag};
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  LOCAL STORAGE HELPERS
+// ═══════════════════════════════════════════════════════════════
+function ls(key,fb){try{const v=localStorage.getItem(key);return v!==null?JSON.parse(v):fb;}catch{return fb;}}
+function lsSave(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){if(e.name==='QuotaExceededError')alert('Storage full!');}}
+
+// ═══════════════════════════════════════════════════════════════
+//  SITE DATA  (all content in one object, synced to data.json)
+// ═══════════════════════════════════════════════════════════════
+const DEFAULT_DATA = {
+  texts:{},
+  anniversaryDate:'2023-06-14',
+  timeline:[
+    {id:1,date:'Edit this date',badge:'beginning',badgeLabel:'The beginning',title:'The day we met ♡',desc:'Write your story here — how you met, what happened, how you felt.',future:false},
+    {id:2,date:'Edit this date',badge:'moment',badgeLabel:'A moment',title:'First trip together',desc:'Describe your first adventure together. Where did you go? What made it unforgettable?',future:false},
+    {id:3,date:'Edit this date',badge:'milestone',badgeLabel:'Milestone',title:'One whole year ✨',desc:'Your first anniversary. What did you do? How did you celebrate?',future:false},
+    {id:4,date:'The next chapter',badge:'',badgeLabel:'Coming soon',title:'Still being written…',desc:'This story isn\'t finished. Add new entries as you make more memories together.',future:true},
+  ],
+  notes:[
+    {id:1,tag:'To her',text:'I love the way you laugh at your own jokes before you even finish telling them.',from:'you',date:'Edit this date'},
+    {id:2,tag:'To him',text:'Thank you for always knowing when I need silence and when I need you to talk to me.',from:'her',date:'Edit this date'},
+    {id:3,tag:'To us',text:'I never thought a regular Tuesday could be my favorite day. Then I started spending them with you.',from:'both of us',date:'A Tuesday'},
+  ],
+  bucket:{
+    travel:[
+      {id:1,text:'Watch a sunset on the beach together',done:true},
+      {id:2,text:'Take a spontaneous overnight trip',done:false},
+      {id:3,text:'Get lost in a new city with no plan',done:false},
+      {id:4,text:'See the northern lights',done:false},
+      {id:5,text:'Go on a train journey through the mountains',done:false},
+      {id:6,text:'Stay in a tiny cabin in the middle of nowhere',done:false},
+    ],
+    experiences:[
+      {id:7,text:'Cook a fancy 3-course dinner at home',done:true},
+      {id:8,text:'Watch all our favorite childhood movies',done:true},
+      {id:9,text:'Take a dance class even if we\'re terrible',done:false},
+      {id:10,text:'Write letters to our future selves to open in 5 years',done:false},
+      {id:11,text:'Go stargazing far from the city lights',done:false},
+      {id:12,text:'Plant something together and watch it grow',done:false},
+    ]
+  },
+  photos:[] // [{id, url OR dataUrl, caption, date, tag}]
+};
+
+let D = ls('siteData', DEFAULT_DATA); // working copy
+
+// Merge missing keys from defaults
+function mergeDefaults(obj, def){
+  for(const k in def){ if(!(k in obj)) obj[k]=def[k]; }
+  return obj;
+}
+D = mergeDefaults(D, DEFAULT_DATA);
+
+// ═══════════════════════════════════════════════════════════════
+//  INIT: load from GitHub, then apply to page
+// ═══════════════════════════════════════════════════════════════
+async function init(){
+  if(ghReady()){
+    const remote = await ghLoadData();
+    if(remote){
+      D = mergeDefaults(remote, DEFAULT_DATA);
+      lsSave('siteData', D);
+    }
+  } else {
+    setSyncStatus('ok','');
+  }
+  applyTexts();
+  renderTimeline();
+  renderBucket();
+  renderNotes();
+  renderGallery();
+  // Anniversary
+  const annDate = D.anniversaryDate || '2023-06-14';
+  document.getElementById('anniversaryDateInput').value = annDate;
+  ANNIVERSARY = new Date(annDate+'T00:00:00');
+  updateCounter();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SETTINGS PANEL
+// ═══════════════════════════════════════════════════════════════
+const settingsPanel = document.getElementById('settingsPanel');
+document.getElementById('settingsBtn').addEventListener('click', e=>{
+  e.stopPropagation();
+  settingsPanel.classList.toggle('open');
+  if(settingsPanel.classList.contains('open')){
+    document.getElementById('ghUser').value   = localStorage.getItem('gh_user')   || '';
+    document.getElementById('ghRepo').value   = localStorage.getItem('gh_repo')   || '';
+    document.getElementById('ghBranch').value = localStorage.getItem('gh_branch') || 'main';
+    document.getElementById('ghToken').value  = localStorage.getItem('gh_token')  || '';
+    document.getElementById('settingsStatus').className='settings-status';
+    document.getElementById('settingsStatus').textContent='';
+  }
+});
+document.getElementById('settingsCancel').addEventListener('click',()=>settingsPanel.classList.remove('open'));
+document.addEventListener('click',e=>{ if(!settingsPanel.contains(e.target)&&e.target.id!=='settingsBtn') settingsPanel.classList.remove('open'); });
+
+document.getElementById('settingsSave').addEventListener('click', async()=>{
+  const user   = document.getElementById('ghUser').value.trim();
+  const repo   = document.getElementById('ghRepo').value.trim();
+  const branch = document.getElementById('ghBranch').value.trim() || 'main';
+  const token  = document.getElementById('ghToken').value.trim();
+  const status = document.getElementById('settingsStatus');
+  if(!user||!repo||!token){ status.className='settings-status err'; status.textContent='Please fill in all fields.'; return; }
+  status.className='settings-status'; status.textContent='Testing connection…';
+  // Test: fetch repo info
+  try{
+    const r=await fetch(`https://api.github.com/repos/${user}/${repo}`,{
+      headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(r.status===404) throw new Error('Repo not found. Check the name and that your token has access.');
+    if(r.status===401) throw new Error('Token is invalid or expired.');
+    if(!r.ok) throw new Error('GitHub returned '+r.status);
+    localStorage.setItem('gh_user',user);
+    localStorage.setItem('gh_repo',repo);
+    localStorage.setItem('gh_branch',branch);
+    localStorage.setItem('gh_token',token);
+    status.className='settings-status ok';
+    status.textContent='✓ Connected! Your edits will now sync to GitHub.';
+    setSyncStatus('ok','Connected');
+    // Push current local data to GitHub immediately
+    await ghSaveData(D);
+  }catch(e){
+    status.className='settings-status err';
+    status.textContent='✗ '+e.message;
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  COUNTER
+// ═══════════════════════════════════════════════════════════════
+let ANNIVERSARY = new Date((D.anniversaryDate||'2023-06-14')+'T00:00:00');
+function updateCounter(){
+  const diff=Date.now()-ANNIVERSARY.getTime();
+  if(diff<0)return;
+  const totalHours=Math.floor(diff/3600000), totalDays=Math.floor(totalHours/24);
+  document.getElementById('cnt-years').textContent  = Math.floor(totalDays/365.25);
+  document.getElementById('cnt-months').textContent = Math.floor((totalDays%365.25)/30.44);
+  document.getElementById('cnt-days').textContent   = Math.floor(totalDays%30.44);
+  document.getElementById('cnt-hours').textContent  = totalHours%24;
+}
+setInterval(updateCounter,60000);
+
+document.getElementById('anniversaryDateInput').addEventListener('change',async function(){
+  const d=new Date(this.value+'T00:00:00');
+  if(isNaN(d))return;
+  ANNIVERSARY=d; D.anniversaryDate=this.value;
+  updateCounter();
+  await ghSaveData(D);
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  PETALS
+// ═══════════════════════════════════════════════════════════════
+const pc=document.getElementById('petals');
+for(let i=0;i<18;i++){
+  const p=document.createElement('div'); p.className='petal';
+  p.style.cssText=`left:${Math.random()*100}%;width:${5+Math.random()*6}px;height:${5+Math.random()*6}px;animation-duration:${8+Math.random()*10}s;animation-delay:${Math.random()*12}s;`;
+  pc.appendChild(p);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NAV
+// ═══════════════════════════════════════════════════════════════
+const navToggle=document.getElementById('navToggle');
+const navLinks=document.getElementById('navLinks');
+navToggle.addEventListener('click',()=>navLinks.classList.toggle('open'));
+function closeNav(){navLinks.classList.remove('open');}
+
+// ═══════════════════════════════════════════════════════════════
+//  INLINE TEXT EDITING
+// ═══════════════════════════════════════════════════════════════
+let editMode=false;
+const editToggle=document.getElementById('editToggle');
+
+function applyTexts(){
+  document.querySelectorAll('[data-key]').forEach(el=>{
+    const val=D.texts[el.dataset.key];
+    if(val!==undefined) el.textContent=val;
+  });
+}
+
+function collectTexts(){
+  document.querySelectorAll('[data-key]').forEach(el=>{
+    D.texts[el.dataset.key]=el.textContent;
+  });
+}
+
+function setEditables(on){
+  document.querySelectorAll('[data-editable]').forEach(el=>{
+    el.contentEditable=on?'true':'false';
+    if(el.tagName==='A') el.style.pointerEvents=on?'none':'';
+  });
+}
+
+function setEditMode(on){
+  editMode=on;
+  document.body.classList.toggle('editing',on);
+  editToggle.classList.toggle('active',on);
+  editToggle.innerHTML=on
+    ? `<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.5 12.75l6 6 9-13.5"/></svg> Done`
+    : `<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg> Edit`;
+  setEditables(on);
+  if(!on){
+    collectTexts();
+    collectTimelineEdits();
+    collectBucketEdits();
+    collectNoteEdits();
+    ghSaveData(D);
+  }
+}
+
+editToggle.addEventListener('click',()=>setEditMode(!editMode));
+
+document.addEventListener('keydown',e=>{
+  if(editMode&&e.key==='Enter'&&e.target.hasAttribute('data-editable')){
+    e.preventDefault(); e.target.blur();
+    collectTexts(); // auto-save text on Enter
+  }
+});
+
+function reapplyEditables(){
+  if(editMode) setEditables(true);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TIMELINE
+// ═══════════════════════════════════════════════════════════════
+function renderTimeline(){
+  const list=document.getElementById('timelineList');
+  list.innerHTML='';
+  D.timeline.forEach(item=>{
+    const div=document.createElement('div');
+    div.className='tl-item'; div.dataset.id=item.id;
+    const badge=item.badgeLabel?`<span class="tl-badge ${item.badge==='milestone'?'milestone':''}" data-editable data-key="tlBadge_${item.id}">${item.badgeLabel}</span>`:'';
+    div.innerHTML=`
+      <div class="tl-dot ${item.future?'future':''}"></div>
+      ${badge}
+      <p class="tl-year" data-editable data-key="tlDate_${item.id}">${item.date}</p>
+      <h3 class="tl-title" data-editable data-key="tlTitle_${item.id}">${item.title}</h3>
+      <p class="tl-desc" data-editable="block" data-key="tlDesc_${item.id}">${item.desc}</p>
+      <button class="tl-remove edit-ctrl" onclick="removeTlItem(${item.id})">✕ remove</button>`;
+    list.appendChild(div);
+  });
+  applyTexts(); reapplyEditables();
+}
+
+function collectTimelineEdits(){
+  D.timeline.forEach(item=>{
+    ['tlDate_','tlTitle_','tlDesc_','tlBadge_'].forEach(pfx=>{
+      const el=document.querySelector(`[data-key="${pfx}${item.id}"]`);
+      if(!el) return;
+      if(pfx==='tlDate_')   item.date       =el.textContent;
+      if(pfx==='tlTitle_')  item.title      =el.textContent;
+      if(pfx==='tlDesc_')   item.desc       =el.textContent;
+      if(pfx==='tlBadge_')  item.badgeLabel =el.textContent;
+    });
+  });
+}
+
+function removeTlItem(id){
+  if(!confirm('Remove this milestone?'))return;
+  D.timeline=D.timeline.filter(i=>i.id!==id);
+  renderTimeline();
+  ghSaveData(D);
+}
+
+const tlModal=document.getElementById('tlModal');
+document.getElementById('addTlBtn').addEventListener('click',()=>tlModal.classList.add('open'));
+document.getElementById('closeTlModal').addEventListener('click',()=>tlModal.classList.remove('open'));
+document.getElementById('cancelTl').addEventListener('click',()=>tlModal.classList.remove('open'));
+tlModal.addEventListener('click',e=>{if(e.target===tlModal)tlModal.classList.remove('open');});
+document.getElementById('saveTl').addEventListener('click',async()=>{
+  const title=document.getElementById('tlTitle').value.trim();
+  if(!title)return;
+  const badgeMap={milestone:'Milestone',moment:'A moment',growing:'Growing together',beginning:'The beginning'};
+  const bk=document.getElementById('tlBadge').value;
+  const item={id:Date.now(),date:document.getElementById('tlDate').value.trim()||'A moment in time',badge:bk,badgeLabel:badgeMap[bk]||'',title,desc:document.getElementById('tlDesc').value.trim(),future:false};
+  const fi=D.timeline.findIndex(i=>i.future);
+  if(fi>=0) D.timeline.splice(fi,0,item); else D.timeline.push(item);
+  renderTimeline();
+  ['tlDate','tlTitle','tlDesc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('tlBadge').value='';
+  tlModal.classList.remove('open');
+  await ghSaveData(D);
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  BUCKET LIST
+// ═══════════════════════════════════════════════════════════════
+function renderBucket(){
+  ['travel','experiences'].forEach(cat=>{
+    const el=document.getElementById('bucket-'+cat);
+    el.innerHTML='';
+    D.bucket[cat].forEach(item=>{
+      const div=document.createElement('div');
+      div.className='bucket-item'+(item.done?' done':''); div.dataset.id=item.id;
+      div.innerHTML=`<div class="bucket-check" onclick="toggleBucket(this)"></div>
+        <span class="bucket-text" data-editable="block" data-key="bucket_${item.id}">${item.text}</span>
+        <button class="bucket-remove edit-ctrl" onclick="removeBucketItem('${cat}',${item.id})">✕</button>`;
+      el.appendChild(div);
+    });
+  });
+  applyTexts(); reapplyEditables();
+}
+
+function collectBucketEdits(){
+  ['travel','experiences'].forEach(cat=>{
+    D.bucket[cat].forEach(item=>{
+      const el=document.querySelector(`[data-key="bucket_${item.id}"]`);
+      if(el) item.text=el.textContent;
+      const row=document.querySelector(`#bucket-${cat} [data-id="${item.id}"]`);
+      if(row) item.done=row.classList.contains('done');
+    });
+  });
+}
+
+function toggleBucket(checkEl){
+  const row=checkEl.closest('.bucket-item');
+  row.classList.toggle('done');
+  const id=parseInt(row.dataset.id);
+  ['travel','experiences'].forEach(cat=>{
+    const f=D.bucket[cat].find(i=>i.id===id);
+    if(f) f.done=row.classList.contains('done');
+  });
+  ghSaveData(D);
+}
+
+function removeBucketItem(cat,id){
+  D.bucket[cat]=D.bucket[cat].filter(i=>i.id!==id);
+  renderBucket(); ghSaveData(D);
+}
+
+function addBucketItem(cat,inputId){
+  const input=document.getElementById(inputId);
+  const text=input.value.trim(); if(!text)return;
+  D.bucket[cat].push({id:Date.now(),text,done:false});
+  renderBucket(); input.value='';
+  reapplyEditables(); ghSaveData(D);
+}
+
+['addTravel','addExp'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();addBucketItem(id==='addTravel'?'travel':'experiences',id);}
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  LOVE NOTES
+// ═══════════════════════════════════════════════════════════════
+function renderNotes(){
+  const grid=document.getElementById('notesGrid'); grid.innerHTML='';
+  D.notes.forEach(note=>{
+    const card=document.createElement('div'); card.className='note-card'; card.dataset.id=note.id;
+    card.innerHTML=`<button class="note-remove" onclick="removeNote(${note.id})">✕</button>
+      <span class="note-tag" data-editable data-key="noteTag_${note.id}">${note.tag}</span>
+      <p class="note-text" data-editable="block" data-key="noteText_${note.id}">${note.text}</p>
+      <div class="note-from"><span>from <strong data-editable data-key="noteFrom_${note.id}">${note.from}</strong></span>
+      <span data-editable data-key="noteDate_${note.id}">${note.date}</span></div>`;
+    grid.appendChild(card);
+  });
+  applyTexts(); reapplyEditables();
+}
+
+function collectNoteEdits(){
+  D.notes.forEach(note=>{
+    const t=document.querySelector(`[data-key="noteText_${note.id}"]`);
+    const g=document.querySelector(`[data-key="noteTag_${note.id}"]`);
+    const f=document.querySelector(`[data-key="noteFrom_${note.id}"]`);
+    const d=document.querySelector(`[data-key="noteDate_${note.id}"]`);
+    if(t) note.text=t.textContent;
+    if(g) note.tag =g.textContent;
+    if(f) note.from=f.textContent;
+    if(d) note.date=d.textContent;
+  });
+}
+
+function removeNote(id){
+  if(!confirm('Delete this note?'))return;
+  D.notes=D.notes.filter(n=>n.id!==id);
+  renderNotes(); ghSaveData(D);
+}
+
+const noteModal=document.getElementById('noteModal');
+document.getElementById('openNoteModal').addEventListener('click',()=>noteModal.classList.add('open'));
+document.getElementById('closeNoteModal').addEventListener('click',()=>noteModal.classList.remove('open'));
+document.getElementById('cancelNote').addEventListener('click',()=>noteModal.classList.remove('open'));
+noteModal.addEventListener('click',e=>{if(e.target===noteModal)noteModal.classList.remove('open');});
+document.getElementById('saveNote').addEventListener('click',async()=>{
+  const text=document.getElementById('noteText').value.trim(); if(!text)return;
+  const note={id:Date.now(),tag:document.getElementById('noteTag').value,text,from:document.getElementById('noteFrom').value,
+    date:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})};
+  D.notes.unshift(note);
+  renderNotes(); document.getElementById('noteText').value='';
+  noteModal.classList.remove('open'); reapplyEditables();
+  await ghSaveData(D);
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  GALLERY
+// ═══════════════════════════════════════════════════════════════
+let currentFilter='all';
+
+function photoSrc(p){ return p.url || p.dataUrl || ''; }
+
+function renderGallery(){
+  const grid=document.getElementById('galleryGrid');
+  const empty=document.getElementById('galleryEmpty');
+  grid.querySelectorAll('.gallery-item').forEach(el=>el.remove());
+  const filtered=currentFilter==='all'?D.photos:D.photos.filter(p=>p.tag===currentFilter);
+  empty.style.display=filtered.length===0?'block':'none';
+  if(!grid.contains(empty)) grid.appendChild(empty);
+  filtered.forEach(photo=>{
+    const src=photoSrc(photo);
+    const item=document.createElement('div');
+    item.className='gallery-item'; item.dataset.tag=photo.tag; item.dataset.id=photo.id;
+    item.innerHTML=`<img src="${src}" alt="${photo.caption||''}" loading="lazy" style="display:block;width:100%;border-radius:8px;"/>
+      <div class="overlay"><div class="overlay-caption">${photo.caption||'A memory ♡'}</div><div class="overlay-date">${photo.date||''}</div></div>`;
+    item.addEventListener('click',()=>openLightbox(photo.id));
+    grid.insertBefore(item,empty);
+  });
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active'); currentFilter=btn.dataset.filter; renderGallery();
+  });
+});
+
+// Upload modal
+const uploadModal=document.getElementById('uploadModal');
+const dropZone=document.getElementById('dropZone');
+const fileInput=document.getElementById('photoFileInput');
+const previewStrip=document.getElementById('previewStrip');
+let stagedFiles=[];
+
+function openUploadModal(){uploadModal.classList.add('open');stagedFiles=[];previewStrip.innerHTML='';}
+function closeUploadModal(){uploadModal.classList.remove('open');stagedFiles=[];previewStrip.innerHTML='';}
+document.getElementById('openUploadModal').addEventListener('click',openUploadModal);
+document.getElementById('closeUploadModal').addEventListener('click',closeUploadModal);
+document.getElementById('cancelUpload').addEventListener('click',closeUploadModal);
+uploadModal.addEventListener('click',e=>{if(e.target===uploadModal)closeUploadModal();});
+dropZone.addEventListener('click',()=>fileInput.click());
+fileInput.addEventListener('change',e=>handleFiles(Array.from(e.target.files)));
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragover');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('dragover');handleFiles(Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')));});
+
+function handleFiles(files){
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const dataUrl=ev.target.result; const id=Date.now()+Math.random();
+      stagedFiles.push({id,file,dataUrl});
+      const thumb=document.createElement('div'); thumb.className='preview-thumb'; thumb.dataset.id=id;
+      thumb.innerHTML=`<img src="${dataUrl}" alt="preview"/><button class="rm">×</button>`;
+      thumb.querySelector('.rm').addEventListener('click',e=>{e.stopPropagation();stagedFiles=stagedFiles.filter(f=>f.id!=id);thumb.remove();});
+      previewStrip.appendChild(thumb);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('savePhotos').addEventListener('click',async()=>{
+  if(!stagedFiles.length){alert('Please choose at least one photo first.');return;}
+  const caption=document.getElementById('photoCaption').value.trim();
+  const date=document.getElementById('photoDate').value.trim();
+  const tag=document.getElementById('photoTag').value;
+  const prog=document.getElementById('uploadProgress');
+  const fill=document.getElementById('progressFill');
+  const txt=document.getElementById('progressText');
+  prog.classList.add('show');
+
+  let saved=0;
+  for(const staged of stagedFiles){
+    const compressed=await new Promise(res=>compressImage(staged.dataUrl,1200,.82,res));
+    const filename=`photo_${Date.now()}_${Math.floor(Math.random()*10000)}.jpg`;
+    const photoObj=await ghSavePhoto(filename, compressed, caption, date, tag);
+    D.photos.unshift(photoObj);
+    saved++;
+    fill.style.width=Math.round(saved/stagedFiles.length*100)+'%';
+    txt.textContent=`Uploading ${saved} of ${stagedFiles.length}…`;
+  }
+  await ghSaveData(D);
+  renderGallery();
+  setTimeout(()=>{prog.classList.remove('show');fill.style.width='0%';closeUploadModal();
+    document.getElementById('photoCaption').value='';document.getElementById('photoDate').value='';},400);
+});
+
+function compressImage(dataUrl,maxW,quality,cb){
+  const img=new Image();
+  img.onload=()=>{
+    const scale=Math.min(1,maxW/img.width);
+    const c=document.createElement('canvas');
+    c.width=Math.round(img.width*scale); c.height=Math.round(img.height*scale);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    cb(c.toDataURL('image/jpeg',quality));
+  };
+  img.src=dataUrl;
+}
+
+const lightbox=document.getElementById('lightbox');
+const lbImg=document.getElementById('lbImg');
+let lbIndex=0;
+function filteredPhotos(){return currentFilter==='all'?D.photos:D.photos.filter(p=>p.tag===currentFilter);}
+function openLightbox(id){const list=filteredPhotos();lbIndex=list.findIndex(p=>p.id==id);if(lbIndex===-1)return;showLbSlide(list,lbIndex);lightbox.classList.add('open');document.body.style.overflow='hidden';}
+function showLbSlide(list,idx){const p=list[idx];lbImg.src=photoSrc(p);document.getElementById('lbCaption').textContent=p.caption||'A memory';document.getElementById('lbMeta').textContent=[p.date,p.tag].filter(Boolean).join(' · ');document.getElementById('lbCounter').textContent=`${idx+1} / ${list.length}`;}
+function closeLightbox(){lightbox.classList.remove('open');document.body.style.overflow='';lbImg.src='';}
+document.getElementById('lbClose').addEventListener('click',closeLightbox);
+lightbox.addEventListener('click',e=>{if(e.target===lightbox)closeLightbox();});
+document.getElementById('lbPrev').addEventListener('click',()=>{const l=filteredPhotos();lbIndex=(lbIndex-1+l.length)%l.length;showLbSlide(l,lbIndex);});
+document.getElementById('lbNext').addEventListener('click',()=>{const l=filteredPhotos();lbIndex=(lbIndex+1)%l.length;showLbSlide(l,lbIndex);});
+document.addEventListener('keydown',e=>{if(!lightbox.classList.contains('open'))return;if(e.key==='ArrowLeft')document.getElementById('lbPrev').click();if(e.key==='ArrowRight')document.getElementById('lbNext').click();if(e.key==='Escape')closeLightbox();});
+document.getElementById('lbDelete').addEventListener('click',async()=>{
+  if(!confirm('Remove this photo?'))return;
+  const list=filteredPhotos(); const id=list[lbIndex].id;
+  D.photos=D.photos.filter(p=>p.id!=id);
+  await ghSaveData(D); renderGallery();
+  const nl=filteredPhotos();
+  if(!nl.length){closeLightbox();return;}
+  lbIndex=Math.min(lbIndex,nl.length-1); showLbSlide(nl,lbIndex);
+});
+
+const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});},{threshold:.12});
+document.querySelectorAll('.fade-in').forEach(el=>observer.observe(el));
+if(window.matchMedia('(prefers-reduced-motion:reduce)').matches) document.querySelectorAll('.petal').forEach(p=>p.style.animationPlayState='paused');
+
+init();
+</script>
+</body>
+</html>
