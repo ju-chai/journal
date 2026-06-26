@@ -52,45 +52,34 @@ img{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;
 @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-5px);}80%{transform:translateX(5px);}}
 
 
-/* ── SETUP WIZARD ── */
-#setupWizard{position:fixed;inset:0;z-index:9998;background:var(--ivory);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem;overflow-y:auto;}
-#setupWizard.open{display:flex;}
-#setupWizard.closing{animation:fadeOut .5s forwards;}
-@keyframes fadeOut{to{opacity:0;}}
-.wizard-wrap{width:100%;max-width:480px;}
-.wizard-step{display:none;flex-direction:column;animation:stepIn .35s ease;}
-.wizard-step.active{display:flex;}
-@keyframes stepIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
-.wizard-eyebrow{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--sage);margin-bottom:.7rem;}
-.wizard-title{font-family:var(--serif);font-size:clamp(26px,5vw,40px);font-weight:300;color:var(--walnut);line-height:1.15;margin-bottom:.6rem;}
-.wizard-title em{font-style:italic;color:var(--rose);}
-.wizard-body{font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:1.8rem;}
-.wizard-body strong{color:var(--warm);font-weight:500;}
-.wizard-body a{color:var(--rose);text-decoration:none;}
-.wizard-body a:hover{text-decoration:underline;}
-.wizard-card{background:white;border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:1.4rem;}
-.wizard-steps-row{display:flex;gap:.5rem;align-items:center;margin-bottom:1.8rem;}
-.wstep-dot{width:8px;height:8px;border-radius:50%;background:var(--blush);transition:all .25s;}
-.wstep-dot.done{background:var(--sage);}
-.wstep-dot.active{background:var(--rose);width:22px;border-radius:100px;}
-.wizard-label{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;}
-.wizard-input{width:100%;font-family:var(--sans);font-size:14px;padding:.65rem 1rem;border:1px solid var(--border);border-radius:8px;background:white;color:var(--walnut);outline:none;margin-bottom:1rem;transition:border-color .2s;}
-.wizard-input:focus{border-color:var(--rose);}
-.wizard-input.err{border-color:#c0392b;}
-.wizard-err{font-size:12px;color:#c0392b;margin-bottom:.8rem;display:none;}
-.wizard-err.show{display:block;}
-.wizard-actions{display:flex;gap:.8rem;align-items:center;margin-top:.5rem;}
-.wizard-btn-primary{flex:1;padding:.75rem;background:var(--rose);border:none;border-radius:100px;color:white;font-family:var(--sans);font-size:13px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background .2s;}
-.wizard-btn-primary:hover{background:var(--roseDark);}
-.wizard-btn-primary:disabled{background:var(--blush);cursor:not-allowed;}
-.wizard-btn-skip{font-family:var(--sans);font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;letter-spacing:.04em;text-decoration:underline;text-underline-offset:3px;}
-.wizard-btn-skip:hover{color:var(--warm);}
-.wizard-success-icon{font-size:40px;margin-bottom:1rem;display:block;}
-.wizard-testing{font-size:12px;color:var(--muted);display:none;align-items:center;gap:.5rem;margin-top:.5rem;}
-.wizard-testing.show{display:flex;}
-.spinner{width:14px;height:14px;border:2px solid var(--blush);border-top-color:var(--rose);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.code-chip{display:inline-block;background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-family:monospace;font-size:12px;color:var(--warm);letter-spacing:.02em;}
+/* ── LOCK SCREEN ── */
+#lockScreen{position:fixed;inset:0;z-index:9999;background:var(--ivory);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;transition:opacity .6s ease,visibility .6s ease;}
+#lockScreen.unlocked{opacity:0;visibility:hidden;pointer-events:none;}
+.lock-petals{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.lock-eyebrow{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--sage);margin-bottom:1rem;font-weight:400;}
+.lock-title{font-family:var(--serif);font-size:clamp(38px,7vw,72px);font-weight:300;color:var(--walnut);line-height:1.1;text-align:center;margin-bottom:.5rem;}
+.lock-title em{font-style:italic;color:var(--rose);}
+.lock-sub{font-size:13px;color:var(--muted);font-weight:300;letter-spacing:.04em;text-align:center;margin-bottom:2.5rem;}
+.lock-divider{display:flex;align-items:center;gap:1rem;margin-bottom:2.5rem;}
+.lock-divider .line{width:50px;height:.5px;background:var(--rose);opacity:.4;}
+.lock-divider .diamond{width:5px;height:5px;background:var(--rose);transform:rotate(45deg);opacity:.6;}
+.lock-form{display:flex;flex-direction:column;align-items:center;gap:1rem;width:100%;max-width:300px;}
+.lock-input-wrap{position:relative;width:100%;}
+.lock-input{width:100%;font-family:var(--sans);font-size:15px;padding:.85rem 3rem .85rem 1.2rem;border:1px solid var(--border);border-radius:100px;background:white;color:var(--walnut);text-align:center;letter-spacing:.15em;outline:none;transition:border-color .2s,box-shadow .2s;}
+.lock-input:focus{border-color:var(--rose);box-shadow:0 0 0 3px rgba(201,133,122,.12);}
+.lock-input.shake{animation:shake .4s ease;}
+.lock-input::placeholder{letter-spacing:.08em;color:var(--blush);}
+.lock-toggle{position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:4px;}
+.lock-btn{width:100%;padding:.85rem;background:var(--rose);border:none;border-radius:100px;color:white;font-family:var(--sans);font-size:13px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .2s,transform .1s;}
+.lock-btn:hover{background:var(--roseDark);}
+.lock-btn:active{transform:scale(.98);}
+.lock-error{font-size:12px;color:var(--rose);letter-spacing:.04em;height:16px;text-align:center;}
+.lock-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:.5rem;letter-spacing:.03em;}
+.lock-hint a{color:var(--rose);text-decoration:none;cursor:pointer;}
+.lock-hint a:hover{text-decoration:underline;}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-5px);}80%{transform:translateX(5px);}}
+
+
 /* ── NAV ── */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:60px;background:rgba(253,248,244,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
 .nav-logo{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--warm);letter-spacing:.02em;text-decoration:none;}
@@ -448,101 +437,6 @@ footer p{font-size:12px;letter-spacing:.04em;}
 </div>
 
 
-<!-- SETUP WIZARD -->
-<div id="setupWizard">
-  <div class="wizard-wrap">
-
-    <!-- progress dots -->
-    <div class="wizard-steps-row">
-      <div class="wstep-dot active" id="wdot0"></div>
-      <div class="wstep-dot" id="wdot1"></div>
-      <div class="wstep-dot" id="wdot2"></div>
-      <div class="wstep-dot" id="wdot3"></div>
-    </div>
-
-    <!-- STEP 0: welcome -->
-    <div class="wizard-step active" id="wstep0">
-      <p class="wizard-eyebrow">one-time setup</p>
-      <h2 class="wizard-title">Let's connect<br>your <em>GitHub</em></h2>
-      <p class="wizard-body">
-        This takes about 3 minutes and only needs to be done once.<br><br>
-        Once connected, every edit you and your girlfriend make — photos, notes, timeline, bucket list — will sync to GitHub automatically, so you're always seeing the same thing from any device.
-      </p>
-      <div class="wizard-actions">
-        <button class="wizard-btn-primary" onclick="wGoTo(1)">Let's set it up →</button>
-        <button class="wizard-btn-skip" onclick="wSkip()">Skip for now</button>
-      </div>
-    </div>
-
-    <!-- STEP 1: repo details -->
-    <div class="wizard-step" id="wstep1">
-      <p class="wizard-eyebrow">step 1 of 3 · your repo</p>
-      <h2 class="wizard-title">Where is your<br><em>repository?</em></h2>
-      <p class="wizard-body">
-        This is the GitHub repo where your <code class="code-chip">index.html</code> lives.
-        You can find your username at the top of any GitHub page.
-      </p>
-      <label class="wizard-label">Your GitHub username</label>
-      <input class="wizard-input" id="wUser" placeholder="e.g. ju-chai" autocomplete="off"/>
-      <label class="wizard-label">Repository name</label>
-      <input class="wizard-input" id="wRepo" placeholder="e.g. journal" autocomplete="off"/>
-      <label class="wizard-label">Branch <span style="color:var(--muted);font-size:11px;">(usually main)</span></label>
-      <input class="wizard-input" id="wBranch" placeholder="main" autocomplete="off"/>
-      <div class="wizard-err" id="wErr1">Please fill in your username and repo name.</div>
-      <div class="wizard-actions">
-        <button class="wizard-btn-primary" onclick="wStep1Next()">Next →</button>
-        <button class="wizard-btn-skip" onclick="wGoTo(0)">← Back</button>
-      </div>
-    </div>
-
-    <!-- STEP 2: token -->
-    <div class="wizard-step" id="wstep2">
-      <p class="wizard-eyebrow">step 2 of 3 · access token</p>
-      <h2 class="wizard-title">Create a<br><em>secret key</em></h2>
-      <p class="wizard-body">
-        GitHub needs a key so the site can save your content there. Here's how to get one:<br><br>
-        <strong>1.</strong> Open <a href="https://github.com/settings/tokens" target="_blank">GitHub → Settings → Developer settings → Personal access tokens (classic)</a><br>
-        <strong>2.</strong> Click <strong>Generate new token (classic)</strong><br>
-        <strong>3.</strong> Name it anything, set expiry to <strong>No expiration</strong><br>
-        <strong>4.</strong> Check <strong>repo</strong> and <strong>gist</strong> scopes<br>
-        <strong>5.</strong> Click <strong>Generate token</strong> and paste it below
-      </p>
-      <label class="wizard-label">Personal access token</label>
-      <input class="wizard-input" id="wToken" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off"/>
-      <label class="wizard-label" style="margin-top:.5rem;">Your site password <span style="color:var(--muted);font-size:11px;">(needed to encrypt the token)</span></label>
-      <input class="wizard-input" id="wPassConfirm" type="password" placeholder="enter your site password" autocomplete="off"/>
-      <div class="wizard-err" id="wErr2">Please fill in both fields.</div>
-      <div class="wizard-actions">
-        <button class="wizard-btn-primary" onclick="wStep2Next()">Test connection →</button>
-        <button class="wizard-btn-skip" onclick="wGoTo(1)">← Back</button>
-      </div>
-      <div class="wizard-testing" id="wTesting">
-        <div class="spinner"></div>
-        <span>Testing connection to GitHub…</span>
-      </div>
-    </div>
-
-    <!-- STEP 3: done -->
-    <div class="wizard-step" id="wstep3">
-      <span class="wizard-success-icon">🎉</span>
-      <p class="wizard-eyebrow">all set!</p>
-      <h2 class="wizard-title">You're <em>connected</em></h2>
-      <p class="wizard-body">
-        Your site is now linked to GitHub. Every edit, photo, note, and memory you add will sync automatically — and your girlfriend will see the same thing from her device too.<br><br>
-        Just share the site URL and your password with her, and you're both good to go. 🌸
-      </p>
-      <div class="wizard-card">
-        <p style="font-size:12px;color:var(--muted);margin-bottom:.4rem;letter-spacing:.06em;text-transform:uppercase;">Your site is live at</p>
-        <p style="font-family:var(--serif);font-style:italic;font-size:17px;color:var(--warm);" id="wSiteUrl">—</p>
-      </div>
-      <div class="wizard-actions">
-        <button class="wizard-btn-primary" onclick="wFinish()">Open our site ♡</button>
-      </div>
-    </div>
-
-  </div>
-</div>
-
 <!-- EDIT BANNER -->
 <div id="editBanner">✏️ Edit mode — click any text to edit · click Done to save to GitHub</div>
 
@@ -755,30 +649,7 @@ function gistReady() { const c = ghCfg(); return !!(c.token && c.gistId); }
 // ── GIST API ──────────────────────────────────────────
 // Save a tiny pointer file to the repo containing just the Gist ID.
 // This only runs ONCE during setup — no further repo commits happen.
-async function saveGistPointer(token, gistId) {
-  try {
-    const user   = localStorage.getItem('gh_user')   || GH_USER;
-    const repo   = localStorage.getItem('gh_repo')   || GH_REPO;
-    const branch = localStorage.getItem('gh_branch') || GH_BRANCH;
-    const content = JSON.stringify({ gistId }, null, 2);
-    const encoded = btoa(unescape(encodeURIComponent(content)));
-    // Check if pointer already exists (need its SHA to update)
-    const checkR = await fetch(
-      'https://api.github.com/repos/' + user + '/' + repo + '/contents/gist-pointer.json?ref=' + branch + '&t=' + Date.now(),
-      { headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' } }
-    );
-    const body = { message: 'Setup: save gist pointer', content: encoded, branch };
-    if (checkR.ok) { const existing = await checkR.json(); body.sha = existing.sha; }
-    await fetch(
-      'https://api.github.com/repos/' + user + '/' + repo + '/contents/gist-pointer.json',
-      {
-        method: 'PUT',
-        headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      }
-    );
-  } catch(e) { /* non-critical — data is already in Gist */ }
-}
+
 // Read data from Gist (public — no token needed)
 async function gistLoad() {
   // Get gistId from localStorage (most reliable source on bootstrap)
@@ -1056,10 +927,7 @@ D = mergeDefaults(D, DEFAULT_DATA);
 // ═══════════════════════════════════════════════════════
 const PASS_KEY    = 'us_always_pass';
 const SESSION_KEY = 'us_always_session';
-const SETUP_KEY   = 'us_always_setup_done';
-
-// Pre-populate repo config in localStorage so wizard step 1 is pre-filled
-// and ghCfg always has a repo to work with
+// Pre-populate repo config in localStorage
 if (!localStorage.getItem('gh_user'))   localStorage.setItem('gh_user',   GH_USER);
 if (!localStorage.getItem('gh_repo'))   localStorage.setItem('gh_repo',   GH_REPO);
 if (!localStorage.getItem('gh_branch')) localStorage.setItem('gh_branch', GH_BRANCH);
@@ -1070,7 +938,6 @@ async function hashPass(str) {
 }
 
 function isUnlocked()   { return sessionStorage.getItem(SESSION_KEY) === 'yes'; }
-function wIsSetupDone() { return !!localStorage.getItem(SETUP_KEY); }
 
 // ── AES-GCM encrypt/decrypt using password as key ──
 async function deriveKey(password) {
@@ -1139,9 +1006,7 @@ async function unlockSite(plainPassword) {
   } else {
   }
 
-  // Only show wizard if: no token anywhere AND setup not done
-  const needsSetup = !ghReady() && !wIsSetupDone();
-  if (needsSetup) setTimeout(() => wOpen(), 900);
+  // GitHub sync bootstraps automatically via gist-pointer.json
 }
 
 // Petals on lock screen
@@ -1231,119 +1096,19 @@ if (isUnlocked()) {
 // ═══════════════════════════════════════════════════════
 //  SETUP WIZARD
 // ═══════════════════════════════════════════════════════
-function wOpen() {
-  document.getElementById('wUser').value   = localStorage.getItem('gh_user')   || '';
-  document.getElementById('wRepo').value   = localStorage.getItem('gh_repo')   || '';
-  document.getElementById('wBranch').value = localStorage.getItem('gh_branch') || 'main';
-  document.getElementById('wToken').value  = '';
-  const user = localStorage.getItem('gh_user') || 'yourname';
-  const repo = localStorage.getItem('gh_repo') || 'your-repo';
-  document.getElementById('wSiteUrl').textContent = 'https://' + user + '.github.io/' + repo;
-  wGoTo(0);
-  document.getElementById('setupWizard').classList.add('open');
-}
 
-function wClose() {
-  const w = document.getElementById('setupWizard');
-  w.classList.add('closing');
-  setTimeout(() => { w.classList.remove('open','closing'); }, 500);
-}
 
-function wGoTo(step) {
-  document.querySelectorAll('.wizard-step').forEach((el,i) => el.classList.toggle('active', i === step));
-  document.querySelectorAll('.wstep-dot').forEach((dot,i) => {
-    dot.classList.remove('active','done');
-    if (i < step)  dot.classList.add('done');
-    if (i === step) dot.classList.add('active');
-  });
-  document.querySelectorAll('.wizard-err').forEach(e => e.classList.remove('show'));
-}
 
-function wSkip() {
-  localStorage.setItem(SETUP_KEY, 'skipped');
-  wClose();
-}
 
-function wStep1Next() {
-  const user   = document.getElementById('wUser').value.trim();
-  const repo   = document.getElementById('wRepo').value.trim();
-  const branch = document.getElementById('wBranch').value.trim() || 'main';
-  const err    = document.getElementById('wErr1');
-  if (!user || !repo) { err.classList.add('show'); return; }
-  err.classList.remove('show');
-  localStorage.setItem('gh_user',   user);
-  localStorage.setItem('gh_repo',   repo);
-  localStorage.setItem('gh_branch', branch);
-  document.getElementById('wSiteUrl').textContent = 'https://' + user + '.github.io/' + repo;
-  wGoTo(2);
-}
 
-async function wStep2Next() {
-  const token   = document.getElementById('wToken').value.trim();
-  const err     = document.getElementById('wErr2');
-  const testing = document.getElementById('wTesting');
-  const btn     = document.querySelector('#wstep2 .wizard-btn-primary');
-  const passConfirm = document.getElementById('wPassConfirm') ? document.getElementById('wPassConfirm').value.trim() : '';
-  if (!token) { err.textContent = 'Please paste your token.'; err.classList.add('show'); return; }
-  if (!passConfirm && !sessionStorage.getItem('plain_pass_temp')) { err.textContent = 'Please enter your site password.'; err.classList.add('show'); return; }
-  err.classList.remove('show');
-  testing.classList.add('show');
-  btn.disabled = true;
-  try {
-    const user = localStorage.getItem('gh_user');
-    const repo = localStorage.getItem('gh_repo');
-    const r = await fetch('https://api.github.com/repos/' + user + '/' + repo, {
-      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' }
-    });
-    if (r.status === 404) throw new Error('Repo not found. Check your username and repo name.');
-    if (r.status === 401) throw new Error('Token is invalid or expired.');
-    if (!r.ok) throw new Error('GitHub returned ' + r.status);
-    localStorage.setItem('gh_token', token);
-    localStorage.setItem(SETUP_KEY, 'done');
-    sessionStorage.setItem('gh_token_s', token);
 
-    // Create a Gist to store all site data (avoids triggering Pages deployment on every save)
-    const testing2 = document.getElementById('wTesting');
-    const span = testing2.querySelector('span');
-    if (span) span.textContent = 'Creating data store…';
 
-    let gistId = localStorage.getItem('gh_gist_id') || '';
-    if (!gistId) {
-      gistId = await gistCreate(token, D);
-      localStorage.setItem('gh_gist_id', gistId);
-    }
 
-    // Encrypt both token AND gist ID with the site password
-    // Use the password entered in the wizard — most reliable source
-    const plainPass = document.getElementById('wPassConfirm').value.trim()
-                   || sessionStorage.getItem('plain_pass_temp')
-                   || '';
-    if (plainPass) {
-      D.encryptedToken  = await encryptToken(token, plainPass);
-      D.encryptedGistId = await encryptToken(gistId, plainPass);
-    }
-    D.gistId = gistId; // also store plain for devices that already have the token
 
-    // Save data to Gist
-    await gistSave(D);
 
-    // Save a tiny pointer file to the repo so new devices can find the Gist
-    // This is the ONLY commit to the repo — happens once during setup
-    await saveGistPointer(token, gistId);
 
-    setSyncStatus('ok', 'Connected');
-    testing.classList.remove('show');
-    btn.disabled = false;
-    wGoTo(3);
-  } catch(e) {
-    testing.classList.remove('show');
-    btn.disabled = false;
-    err.textContent = e.message;
-    err.classList.add('show');
-  }
-}
 
-function wFinish() { wClose(); }
+
 
 
 
