@@ -622,7 +622,7 @@ footer p{font-size:12px;letter-spacing:.04em;}
 
 // ── AUTO CACHE BUSTER ──────────────────────────────────────────
 // Bump SITE_VERSION any time you want all devices to force-refresh.
-const SITE_VERSION = '2';
+const SITE_VERSION = '3';
 if (localStorage.getItem('site_version') !== SITE_VERSION) {
   localStorage.removeItem('siteData');
   localStorage.setItem('site_version', SITE_VERSION);
@@ -735,12 +735,20 @@ async function ghLoadData() {
 }
 
 async function ghGetSHA(path) {
-  // Always fetch a fresh SHA directly from GitHub API — never use a cached one
+  // Fetch fresh SHA with cache disabled so GitHub never returns a stale value
   try {
     const c = ghCfg();
     const r = await fetch(
-      'https://api.github.com/repos/' + c.user + '/' + c.repo + '/contents/' + path + '?ref=' + c.branch,
-      { headers: { 'Authorization': 'token ' + c.token, 'Accept': 'application/vnd.github.v3+json' } }
+      'https://api.github.com/repos/' + c.user + '/' + c.repo + '/contents/' + path + '?ref=' + c.branch + '&t=' + Date.now(),
+      {
+        headers: {
+          'Authorization': 'token ' + c.token,
+          'Accept': 'application/vnd.github.v3+json',
+          'Cache-Control': 'no-cache, no-store',
+          'Pragma': 'no-cache'
+        },
+        cache: 'no-store'
+      }
     );
     if (!r.ok) return undefined;
     const json = await r.json();
@@ -753,18 +761,33 @@ async function ghGetSHA(path) {
 async function ghSaveData(data) {
   if (!ghReady()) { lsSave('siteData', data); return; }
   setSyncStatus('syncing', 'Saving…');
-  try {
-    // Always get a live SHA right before writing — prevents stale SHA errors
-    // across multiple devices editing simultaneously
-    const sha = await ghGetSHA(DATA_PATH);
-    await ghPut(DATA_PATH, JSON.stringify(data, null, 2), 'Update site data', sha);
-    lsSave('siteData', data);
-    setSyncStatus('ok', 'Saved');
-    setTimeout(() => setSyncStatus('ok', ''), 2500);
-  } catch(e) {
-    setSyncStatus('error', 'Save failed');
-    alert('Could not save to GitHub: ' + e.message + '\n\nChanges saved locally as backup.');
-    lsSave('siteData', data);
+  // Retry up to 3 times on SHA mismatch — each retry fetches a completely fresh SHA
+  const MAX_RETRIES = 3;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const sha = await ghGetSHA(DATA_PATH);
+      await ghPut(DATA_PATH, JSON.stringify(data, null, 2), 'Update site data', sha);
+      lsSave('siteData', data);
+      setSyncStatus('ok', 'Saved');
+      setTimeout(() => setSyncStatus('ok', ''), 2500);
+      return; // success — exit
+    } catch(e) {
+      const isMismatch = e.message && (e.message.includes('does not match') || e.message.includes('409') || e.message.includes('conflict'));
+      if (isMismatch && attempt < MAX_RETRIES) {
+        // Wait a moment then retry with a fresh SHA
+        await new Promise(res => setTimeout(res, 500 * attempt));
+        continue;
+      }
+      // Final failure — save locally and notify
+      setSyncStatus('error', 'Save failed');
+      lsSave('siteData', data);
+      if (!isMismatch) {
+        alert('Could not save to GitHub: ' + e.message + '\n\nChanges saved locally as backup.');
+      } else {
+        alert('Save conflict — please refresh the page and try again.\n\nYour changes are saved locally.');
+      }
+      return;
+    }
   }
 }
 
