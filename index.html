@@ -979,19 +979,26 @@ async function ghSavePhoto(filename, base64data, caption, date, tag) {
   const b64  = base64data.split(',')[1];
   const path = 'images/' + filename;
   if (!ghReady()) return { localOnly: true, dataUrl: base64data, id: Date.now() + Math.random(), caption, date, tag };
-  setSyncStatus('syncing', 'Uploading photo…');
-  try {
-    // Always fetch a live SHA before writing to avoid stale SHA errors
-    const sha = await ghGetSHA(path);
-    await ghPutBinary(path, b64, 'Add photo: ' + filename, sha);
-    const c = ghCfg();
-    const url = `https://raw.githubusercontent.com/${c.user}/${c.repo}/${c.branch}/${path}`;
-    setSyncStatus('ok', 'Photo saved');
-    return { id: Date.now() + Math.random(), url, caption, date, tag };
-  } catch(e) {
-    setSyncStatus('error', 'Upload failed');
-    alert('Photo upload failed: ' + e.message + '\n\nSaving locally as fallback.');
-    return { id: Date.now() + Math.random(), dataUrl: base64data, caption, date, tag };
+  const MAX_RETRIES = 3;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      // Always fetch a fresh SHA right before writing — same pattern as ghSaveData
+      const sha = await ghGetSHA(path);
+      await ghPutBinary(path, b64, 'Add photo: ' + filename, sha);
+      const cfg = ghCfg();
+      const url = 'https://raw.githubusercontent.com/' + cfg.user + '/' + cfg.repo + '/' + cfg.branch + '/' + path;
+      return { id: Date.now() + Math.random(), url, caption, date, tag };
+    } catch(e) {
+      const msg = e.message || '';
+      const isMismatch = msg.includes('does not match') || msg.includes('409') || msg.includes('conflict');
+      if (isMismatch && attempt < MAX_RETRIES) {
+        await new Promise(res => setTimeout(res, 600 * attempt));
+        continue;
+      }
+      // Final failure — save locally as fallback
+      showToast('Photo saved locally (GitHub upload failed)', 'error', 5000);
+      return { id: Date.now() + Math.random(), dataUrl: base64data, caption, date, tag };
+    }
   }
 }
 
