@@ -286,7 +286,7 @@ body.editing .album-delete{display:flex;}
 
 .album-photo-item{
   background:white;
-  padding:8px 8px 36px;
+  padding:8px 8px 44px;
   box-shadow:0 2px 8px rgba(58,37,32,.09);
   border-radius:2px;
   cursor:pointer;
@@ -305,6 +305,19 @@ body.editing .album-delete{display:flex;}
 .album-photo-item:nth-child(4n+4){--tilt:1.2deg;}
 .album-photo-item img{
   width:100%;aspect-ratio:1/1;object-fit:cover;display:block;
+}
+.album-photo-label{
+  position:absolute;
+  bottom:0;left:0;right:0;
+  padding:6px 8px 10px;
+  text-align:center;
+  font-family:var(--serif);
+  font-style:italic;
+  font-size:12px;
+  color:var(--warm);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 /* Pagination */
@@ -1742,7 +1755,8 @@ function renderAlbumPhotos() {
   pagePhotos.forEach((photo, idx) => {
     const item = document.createElement('div');
     item.className = 'album-photo-item';
-    item.innerHTML = '<img src="' + photoSrc(photo) + '" alt="" loading="lazy"/>';
+    item.innerHTML = '<img src="' + photoSrc(photo) + '" alt="" loading="lazy"/>' +
+      '<div class="album-photo-label">' + (album.title || '') + '</div>';
     item.addEventListener('click', () => openAlbumLightbox(album, (albumPage-1)*PHOTOS_PER_PAGE + idx));
     grid.appendChild(item);
   });
