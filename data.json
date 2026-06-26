@@ -191,14 +191,6 @@
       }
     ]
   },
-  "photos": [
-    {
-      "id": 1782448003286.9438,
-      "url": "https://raw.githubusercontent.com/ju-chai/journal/main/images/photo_1782447999657_759.jpg",
-      "caption": "Test",
-      "date": "May 2026",
-      "tag": "travel"
-    }
-  ],
+  "photos": [],
   "encryptedToken": "9601b5f1578b91084edb8b91:b01195f66a628fa42dc7af8b9de3908f3d33b6ffcf71ec1e4c74a349c12575a6ea0c0010b2f41ed28d9a7b77b8fde7b23f418588962522bbfd04f2570573487e3a035f998e387ea493d017c36ee52715bd5f42c1cd1d80fbdc2d7c4ad48c3a93e285f027030196c4f81f7ad188"
 }
