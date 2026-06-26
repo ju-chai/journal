@@ -24,6 +24,33 @@ img{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;
 ::-webkit-scrollbar-track{background:var(--cream);}
 ::-webkit-scrollbar-thumb{background:var(--blush);border-radius:10px;}
 
+/* ── LOCK SCREEN ── */
+#lockScreen{position:fixed;inset:0;z-index:9999;background:var(--ivory);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;transition:opacity .6s ease,visibility .6s ease;}
+#lockScreen.unlocked{opacity:0;visibility:hidden;pointer-events:none;}
+.lock-petals{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.lock-eyebrow{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--sage);margin-bottom:1rem;font-weight:400;}
+.lock-title{font-family:var(--serif);font-size:clamp(38px,7vw,72px);font-weight:300;color:var(--walnut);line-height:1.1;text-align:center;margin-bottom:.5rem;}
+.lock-title em{font-style:italic;color:var(--rose);}
+.lock-sub{font-size:13px;color:var(--muted);font-weight:300;letter-spacing:.04em;text-align:center;margin-bottom:2.5rem;}
+.lock-divider{display:flex;align-items:center;gap:1rem;margin-bottom:2.5rem;}
+.lock-divider .line{width:50px;height:.5px;background:var(--rose);opacity:.4;}
+.lock-divider .diamond{width:5px;height:5px;background:var(--rose);transform:rotate(45deg);opacity:.6;}
+.lock-form{display:flex;flex-direction:column;align-items:center;gap:1rem;width:100%;max-width:300px;}
+.lock-input-wrap{position:relative;width:100%;}
+.lock-input{width:100%;font-family:var(--sans);font-size:15px;padding:.85rem 3rem .85rem 1.2rem;border:1px solid var(--border);border-radius:100px;background:white;color:var(--walnut);text-align:center;letter-spacing:.15em;outline:none;transition:border-color .2s,box-shadow .2s;}
+.lock-input:focus{border-color:var(--rose);box-shadow:0 0 0 3px rgba(201,133,122,.12);}
+.lock-input.shake{animation:shake .4s ease;}
+.lock-input::placeholder{letter-spacing:.08em;color:var(--blush);}
+.lock-toggle{position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:4px;}
+.lock-btn{width:100%;padding:.85rem;background:var(--rose);border:none;border-radius:100px;color:white;font-family:var(--sans);font-size:13px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .2s,transform .1s;}
+.lock-btn:hover{background:var(--roseDark);}
+.lock-btn:active{transform:scale(.98);}
+.lock-error{font-size:12px;color:var(--rose);letter-spacing:.04em;height:16px;text-align:center;}
+.lock-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:.5rem;letter-spacing:.03em;}
+.lock-hint a{color:var(--rose);text-decoration:none;cursor:pointer;}
+.lock-hint a:hover{text-decoration:underline;}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-5px);}80%{transform:translateX(5px);}}
+
 /* ── NAV ── */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:60px;background:rgba(253,248,244,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
 .nav-logo{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--warm);letter-spacing:.02em;text-decoration:none;}
@@ -291,6 +318,41 @@ footer p{font-size:12px;letter-spacing:.04em;}
     <button class="btn-settings-save" id="settingsSave">Test &amp; save</button>
   </div>
   <div class="settings-status" id="settingsStatus"></div>
+</div>
+
+<!-- LOCK SCREEN -->
+<div id="lockScreen">
+  <div class="lock-petals" id="lockPetals"></div>
+  <p class="lock-eyebrow">private · just for us</p>
+  <h1 class="lock-title">us,<br><em>always</em> ♡</h1>
+  <p class="lock-sub">Enter the password to open your little world</p>
+  <div class="lock-divider"><div class="line"></div><div class="diamond"></div><div class="line"></div></div>
+  <div class="lock-form">
+    <div class="lock-input-wrap">
+      <input class="lock-input" id="lockInput" type="password" placeholder="our password" autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <button class="lock-toggle" id="lockToggle" tabindex="-1" aria-label="Show/hide password">👁</button>
+    </div>
+    <div class="lock-error" id="lockError"></div>
+    <button class="lock-btn" id="lockBtn">Enter ♡</button>
+    <p class="lock-hint">First time? <a id="lockSetupLink">Set your password</a></p>
+  </div>
+</div>
+
+<!-- SET PASSWORD MODAL -->
+<div class="modal-overlay" id="setPasswordModal">
+  <div class="modal" style="max-width:380px;">
+    <h3>Set your password</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.2rem;line-height:1.6;">Choose a password you'll both remember. Share it with her directly — it's never stored online.</p>
+    <label>New password</label>
+    <input type="password" id="newPass1" placeholder="choose a password" autocomplete="new-password"/>
+    <label>Confirm password</label>
+    <input type="password" id="newPass2" placeholder="type it again" autocomplete="new-password"/>
+    <div style="font-size:12px;color:var(--rose);height:16px;margin-bottom:.8rem;" id="setPassError"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelSetPass">Cancel</button>
+      <button class="btn-save" id="confirmSetPass">Save password</button>
+    </div>
+  </div>
 </div>
 
 <!-- EDIT BANNER -->
@@ -1121,7 +1183,115 @@ const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isInt
 document.querySelectorAll('.fade-in').forEach(el=>observer.observe(el));
 if(window.matchMedia('(prefers-reduced-motion:reduce)').matches) document.querySelectorAll('.petal').forEach(p=>p.style.animationPlayState='paused');
 
-init();
+// ═══════════════════════════════════════════════════════════════
+//  LOCK SCREEN
+// ═══════════════════════════════════════════════════════════════
+const PASS_KEY    = 'us_always_pass';
+const SESSION_KEY = 'us_always_session';
+
+async function hashPass(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str + 'us_always_salt_xo'));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function isUnlocked() { return sessionStorage.getItem(SESSION_KEY) === 'yes'; }
+
+function unlockSite() {
+  sessionStorage.setItem(SESSION_KEY, 'yes');
+  const ls = document.getElementById('lockScreen');
+  if (ls) {
+    ls.classList.add('unlocked');
+    setTimeout(() => { if(ls.parentNode) ls.parentNode.removeChild(ls); }, 700);
+  }
+  init();
+}
+
+// Spawn petals on lock screen
+const lp = document.getElementById('lockPetals');
+if (lp) {
+  for (let i = 0; i < 14; i++) {
+    const p = document.createElement('div'); p.className = 'petal';
+    p.style.cssText = 'left:'+Math.random()*100+'%;width:'+(5+Math.random()*5)+'px;height:'+(5+Math.random()*5)+'px;animation-duration:'+(9+Math.random()*10)+'s;animation-delay:'+(Math.random()*14)+'s;';
+    lp.appendChild(p);
+  }
+}
+
+if (isUnlocked()) {
+  unlockSite();
+} else {
+  const hasPass = !!localStorage.getItem(PASS_KEY);
+  const lockBtn   = document.getElementById('lockBtn');
+  const lockInput = document.getElementById('lockInput');
+  const lockToggle= document.getElementById('lockToggle');
+  const lockSetup = document.getElementById('lockSetupLink');
+  const setPassModal = document.getElementById('setPasswordModal');
+
+  if (!hasPass) {
+    lockBtn.style.display = 'none';
+    lockInput.style.display = 'none';
+    lockToggle.style.display = 'none';
+    setPassModal.classList.add('open');
+  }
+
+  async function tryUnlock() {
+    const val = lockInput.value; if (!val) return;
+    const hashed = await hashPass(val);
+    if (hashed === localStorage.getItem(PASS_KEY)) {
+      document.getElementById('lockError').textContent = '';
+      unlockSite();
+    } else {
+      lockInput.classList.remove('shake');
+      void lockInput.offsetWidth;
+      lockInput.classList.add('shake');
+      document.getElementById('lockError').textContent = 'Wrong password — try again';
+      lockInput.value = ''; lockInput.focus();
+    }
+  }
+
+  lockBtn.addEventListener('click', tryUnlock);
+  lockInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+  lockToggle.addEventListener('click', () => { lockInput.type = lockInput.type === 'password' ? 'text' : 'password'; });
+  lockSetup.addEventListener('click', () => setPassModal.classList.add('open'));
+}
+
+// Set / change password modal
+document.getElementById('cancelSetPass').addEventListener('click', () => {
+  document.getElementById('setPasswordModal').classList.remove('open');
+});
+document.getElementById('confirmSetPass').addEventListener('click', async () => {
+  const p1 = document.getElementById('newPass1').value;
+  const p2 = document.getElementById('newPass2').value;
+  const err = document.getElementById('setPassError');
+  if (!p1) { err.textContent = 'Please enter a password.'; return; }
+  if (p1.length < 4) { err.textContent = 'At least 4 characters please.'; return; }
+  if (p1 !== p2) { err.textContent = "Passwords don't match."; return; }
+  localStorage.setItem(PASS_KEY, await hashPass(p1));
+  err.textContent = '';
+  document.getElementById('setPasswordModal').classList.remove('open');
+  document.getElementById('newPass1').value = '';
+  document.getElementById('newPass2').value = '';
+  // Show inputs if they were hidden
+  const lb = document.getElementById('lockBtn');
+  const li = document.getElementById('lockInput');
+  const lt = document.getElementById('lockToggle');
+  if (lb) lb.style.display = '';
+  if (li) li.style.display = '';
+  if (lt) lt.style.display = '';
+  unlockSite();
+});
+
+// Change password link in settings panel — inject it
+const settingsDiv = document.getElementById('settingsPanel');
+if (settingsDiv) {
+  const div = document.createElement('div');
+  div.style.cssText = 'margin-top:.8rem;';
+  div.innerHTML = '<div style="height:1px;background:var(--border);margin-bottom:.8rem;"></div><button style="background:none;border:none;color:var(--rose);font-family:var(--sans);font-size:12px;cursor:pointer;letter-spacing:.04em;padding:0;" id="changePassBtn">Change site password</button>';
+  settingsDiv.appendChild(div);
+  document.getElementById('changePassBtn').addEventListener('click', () => {
+    document.getElementById('settingsPanel').classList.remove('open');
+    document.getElementById('setPasswordModal').classList.add('open');
+  });
+}
 </script>
 </body>
 </html>
