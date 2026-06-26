@@ -1,0 +1,132 @@
+{
+  "texts": {},
+  "anniversaryDate": "2023-06-14",
+  "timeline": [
+    {
+      "id": 1,
+      "date": "Edit this date",
+      "badge": "beginning",
+      "badgeLabel": "The beginning",
+      "title": "The day we met",
+      "desc": "Write your story here — how you met, what happened, how you felt.",
+      "future": false
+    },
+    {
+      "id": 2,
+      "date": "Edit this date",
+      "badge": "moment",
+      "badgeLabel": "A moment",
+      "title": "First trip together",
+      "desc": "Describe your first adventure. Where did you go?",
+      "future": false
+    },
+    {
+      "id": 3,
+      "date": "Edit this date",
+      "badge": "milestone",
+      "badgeLabel": "Milestone",
+      "title": "One whole year",
+      "desc": "Your first anniversary. What did you do?",
+      "future": false
+    },
+    {
+      "id": 4,
+      "date": "The next chapter",
+      "badge": "",
+      "badgeLabel": "Coming soon",
+      "title": "Still being written…",
+      "desc": "This story isn't finished. Add new entries as you make more memories.",
+      "future": true
+    }
+  ],
+  "notes": [
+    {
+      "id": 1,
+      "tag": "To her",
+      "text": "I love the way you laugh at your own jokes before you even finish telling them.",
+      "from": "you",
+      "date": "Edit this date"
+    },
+    {
+      "id": 2,
+      "tag": "To him",
+      "text": "Thank you for always knowing when I need silence and when I need you to talk to me.",
+      "from": "her",
+      "date": "Edit this date"
+    },
+    {
+      "id": 3,
+      "tag": "To us",
+      "text": "I never thought a regular Tuesday could be my favorite day. Then I started spending them with you.",
+      "from": "both of us",
+      "date": "A Tuesday"
+    }
+  ],
+  "bucket": {
+    "travel": [
+      {
+        "id": 1,
+        "text": "Watch a sunset on the beach together",
+        "done": true
+      },
+      {
+        "id": 2,
+        "text": "Take a spontaneous overnight trip",
+        "done": false
+      },
+      {
+        "id": 3,
+        "text": "Get lost in a new city with no plan",
+        "done": false
+      },
+      {
+        "id": 4,
+        "text": "See the northern lights",
+        "done": false
+      },
+      {
+        "id": 5,
+        "text": "Go on a train journey through the mountains",
+        "done": false
+      },
+      {
+        "id": 6,
+        "text": "Stay in a tiny cabin in the middle of nowhere",
+        "done": false
+      }
+    ],
+    "experiences": [
+      {
+        "id": 7,
+        "text": "Cook a fancy 3-course dinner at home",
+        "done": true
+      },
+      {
+        "id": 8,
+        "text": "Watch all our favorite childhood movies",
+        "done": true
+      },
+      {
+        "id": 9,
+        "text": "Take a dance class even if we are terrible",
+        "done": false
+      },
+      {
+        "id": 10,
+        "text": "Write letters to our future selves",
+        "done": false
+      },
+      {
+        "id": 11,
+        "text": "Go stargazing far from the city lights",
+        "done": false
+      },
+      {
+        "id": 12,
+        "text": "Plant something together and watch it grow",
+        "done": false
+      }
+    ]
+  },
+  "photos": []
+}
