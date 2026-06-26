@@ -629,7 +629,7 @@ footer p{font-size:12px;letter-spacing:.04em;}
 
 // ── AUTO CACHE BUSTER ──────────────────────────────────────────
 // Bump SITE_VERSION any time you want all devices to force-refresh.
-const SITE_VERSION = '7';
+const SITE_VERSION = '8';
 if (localStorage.getItem('site_version') !== SITE_VERSION) {
   localStorage.removeItem('siteData');
   localStorage.setItem('site_version', SITE_VERSION);
@@ -785,6 +785,7 @@ async function ghSaveData(data) {
       const sha = await ghGetSHA(DATA_PATH);
       await ghPut(DATA_PATH, JSON.stringify(data, null, 2), 'Update site data', sha);
       showToast('Saved to GitHub ✓', 'success', 3000);
+      applyTexts(); // ensure DOM reflects saved state
       return;
     } catch(e) {
       const msg = e.message || '';
@@ -1254,7 +1255,14 @@ function setEditMode(on) {
     ? '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.5 12.75l6 6 9-13.5"/></svg> Done'
     : '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg> Edit';
   setEditables(on);
-  if (!on) { collectTexts(); collectTimelineEdits(); collectBucketEdits(); collectNoteEdits(); ghSaveData(D); }
+  if (!on) {
+    collectTexts();
+    collectTimelineEdits();
+    collectBucketEdits();
+    collectNoteEdits();
+    applyTexts(); // re-apply to DOM so display matches exactly what was saved
+    ghSaveData(D);
+  }
 }
 editToggle.addEventListener('click', () => setEditMode(!editMode));
 document.addEventListener('keydown', e => {
