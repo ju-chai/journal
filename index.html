@@ -601,9 +601,9 @@ footer p{font-size:12px;letter-spacing:.04em;}
     <button class="modal-close" id="closeNoteModal">×</button>
     <h3>Add a love note</h3>
     <label>From</label>
-    <select id="noteFrom"><option value="you">From you</option><option value="her">From her</option><option value="both of us">From both of us</option></select>
+    <select id="noteFrom"><option value="Jorel">From Jorel</option><option value="Portia">From Portia</option><option value="both of us">From both of us</option></select>
     <label>Tag</label>
-    <select id="noteTag"><option>To her</option><option>To him</option><option>To us</option><option>A memory</option><option>A feeling</option></select>
+    <select id="noteTag"><option>To Portia</option><option>To Jorel</option><option>To us</option><option>A memory</option><option>A feeling</option></select>
     <label>Your note</label>
     <textarea id="noteText" rows="4" placeholder="Write something from the heart…"></textarea>
     <div class="modal-actions"><button class="btn-cancel" id="cancelNote">Cancel</button><button class="btn-save" id="saveNote">Save note</button></div>
@@ -917,8 +917,8 @@ const DEFAULT_DATA = {
     { id:4, date:'The next chapter', badge:'', badgeLabel:'Coming soon', title:'Still being written…', desc:"This story isn't finished. Add new entries as you make more memories.", future:true },
   ],
   notes: [
-    { id:1, tag:'To her', text:'I love the way you laugh at your own jokes before you even finish telling them.', from:'you',        date:'Edit this date' },
-    { id:2, tag:'To him', text:'Thank you for always knowing when I need silence and when I need you to talk to me.', from:'her',   date:'Edit this date' },
+    { id:1, tag:'To Portia', text:'I love the way you laugh at your own jokes before you even finish telling them.', from:'Jorel', date:'Edit this date' },
+    { id:2, tag:'To Jorel', text:'Thank you for always knowing when I need silence and when I need you to talk to me.', from:'Portia', date:'Edit this date' },
     { id:3, tag:'To us',  text:"I never thought a regular Tuesday could be my favorite day. Then I started spending them with you.", from:'both of us', date:'A Tuesday' },
   ],
   bucket: {
