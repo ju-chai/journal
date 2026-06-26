@@ -297,6 +297,15 @@ body.editing #editBanner{display:block;}
 .tl-badge.milestone{background:rgba(201,133,122,.12);color:var(--roseDark);}
 .tl-remove{background:none;border:none;cursor:pointer;color:var(--blush);font-size:14px;padding:2px 5px;border-radius:4px;transition:color .2s;line-height:1;vertical-align:middle;margin-left:6px;}
 .tl-remove:hover{color:#c0392b;}
+/* Timeline photo strip */
+.tl-photos{display:flex;gap:8px;flex-wrap:wrap;margin-top:1rem;}
+.tl-photo{width:80px;height:80px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--blush);cursor:pointer;position:relative;}
+.tl-photo img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s ease;}
+.tl-photo:hover img{transform:scale(1.08);}
+.tl-photo-empty{width:80px;height:80px;border-radius:8px;border:1.5px dashed var(--rose);display:none;align-items:center;justify-content:center;flex-shrink:0;color:var(--rose);font-size:20px;cursor:pointer;transition:all .2s;}
+.tl-photo-empty:hover{background:rgba(201,133,122,.07);}
+body.editing .tl-photo-empty{display:flex;}
+.tl-photo-upload{display:none;}
 .btn-add-tl{display:inline-flex;align-items:center;gap:.5rem;margin-top:2rem;padding:.6rem 1.4rem;background:transparent;border:1px solid var(--rose);border-radius:100px;color:var(--rose);font-family:var(--sans);font-size:12px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s;}
 .btn-add-tl:hover{background:var(--rose);color:white;}
 
@@ -717,7 +726,7 @@ footer p{font-size:12px;letter-spacing:.04em;}
 
 // ── AUTO CACHE BUSTER ──────────────────────────────────────────
 // Bump SITE_VERSION any time you want all devices to force-refresh.
-const SITE_VERSION = '9';
+const SITE_VERSION = '10';
 if (localStorage.getItem('site_version') !== SITE_VERSION) {
   localStorage.removeItem('siteData');
   localStorage.setItem('site_version', SITE_VERSION);
@@ -1536,16 +1545,96 @@ function reapplyEditables() { if (editMode) setEditables(true); }
 function renderTimeline() {
   const list = document.getElementById('timelineList'); list.innerHTML = '';
   D.timeline.forEach(item => {
+    if (!item.photos) item.photos = [];
     const div = document.createElement('div'); div.className = 'tl-item'; div.dataset.id = item.id;
     const badge = item.badgeLabel ? '<span class="tl-badge ' + (item.badge==='milestone'?'milestone':'') + '" data-editable data-key="tlBadge_' + item.id + '">' + item.badgeLabel + '</span>' : '';
     div.innerHTML = '<div class="tl-dot ' + (item.future?'future':'') + '"></div>' + badge +
       '<p class="tl-year" data-editable data-key="tlDate_' + item.id + '">' + item.date + '</p>' +
       '<h3 class="tl-title" data-editable data-key="tlTitle_' + item.id + '">' + item.title + '</h3>' +
       '<p class="tl-desc" data-editable="block" data-key="tlDesc_' + item.id + '">' + item.desc + '</p>' +
-      '<button class="tl-remove edit-ctrl" onclick="removeTlItem(' + item.id + ')">Remove</button>';
+      '<div class="tl-photos" id="tlPhotos_' + item.id + '"></div>' +
+      '<input type="file" class="tl-photo-upload" id="tlUpload_' + item.id + '" accept="image/*" multiple/>' +
+      '<button class="tl-remove edit-ctrl" onclick="removeTlItem(' + item.id + ')">Remove milestone</button>';
     list.appendChild(div);
+    // Render existing photos
+    renderTlPhotos(item);
   });
   applyTexts(); reapplyEditables();
+}
+
+function renderTlPhotos(item) {
+  const strip = document.getElementById('tlPhotos_' + item.id);
+  if (!strip) return;
+  strip.innerHTML = '';
+  // Existing photos
+  (item.photos || []).forEach((photo, idx) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'tl-photo';
+    thumb.innerHTML = '<img src="' + (photo.url || photo.dataUrl) + '" alt="' + (photo.caption||'') + '" loading="lazy"/>';
+    thumb.addEventListener('click', () => {
+      if (document.body.classList.contains('editing')) {
+        if (confirm('Remove this photo from the milestone?')) {
+          item.photos.splice(idx, 1);
+          renderTlPhotos(item);
+          ghSaveData(D);
+        }
+      } else {
+        // Open in lightbox-style
+        openTlPhotoViewer(photo.url || photo.dataUrl, photo.caption);
+      }
+    });
+    strip.appendChild(thumb);
+  });
+  // Add photo button (edit mode only)
+  const addBtn = document.createElement('div');
+  addBtn.className = 'tl-photo-empty edit-ctrl';
+  addBtn.innerHTML = '+';
+  addBtn.title = 'Add photo to this milestone';
+  addBtn.addEventListener('click', () => {
+    const input = document.getElementById('tlUpload_' + item.id);
+    if (input) input.click();
+  });
+  strip.appendChild(addBtn);
+  // Wire up file input
+  const input = document.getElementById('tlUpload_' + item.id);
+  if (input) {
+    input.onchange = null;
+    input.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files);
+      showToast('Uploading photo…', 'saving', 60000);
+      for (const file of files) {
+        const dataUrl = await new Promise(res => {
+          const r = new FileReader(); r.onload = ev => res(ev.target.result); r.readAsDataURL(file);
+        });
+        const compressed = await new Promise(res => compressImage(dataUrl, 1000, .82, res));
+        const filename = 'tl_' + item.id + '_' + Date.now() + '.jpg';
+        const photoObj = await ghSavePhoto(filename, compressed, '', '', 'timeline');
+        if (!item.photos) item.photos = [];
+        item.photos.push(photoObj);
+      }
+      renderTlPhotos(item);
+      await ghSaveData(D);
+      showToast('Photo added ✓', 'success', 3000);
+      input.value = '';
+    });
+  }
+  // Reapply edit mode if needed
+  if (document.body.classList.contains('editing')) {
+    strip.querySelectorAll('.edit-ctrl').forEach(el => el.style.display = 'flex');
+  }
+}
+
+function openTlPhotoViewer(src, caption) {
+  // Reuse the lightbox
+  document.getElementById('lbImg').src = src;
+  document.getElementById('lbCaption').textContent = caption || '';
+  document.getElementById('lbMeta').textContent = '';
+  document.getElementById('lbCounter').textContent = '';
+  document.getElementById('lbDelete').style.display = 'none';
+  document.getElementById('lbPrev').style.display = 'none';
+  document.getElementById('lbNext').style.display = 'none';
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 function collectTimelineEdits() {
   D.timeline.forEach(item => {
@@ -1557,6 +1646,7 @@ function collectTimelineEdits() {
       if (pfx==='tlDesc_')  item.desc       = el.textContent;
       if (pfx==='tlBadge_') item.badgeLabel = el.textContent;
     });
+    // photos are already updated in-place by renderTlPhotos
   });
 }
 function removeTlItem(id) {
@@ -1846,7 +1936,15 @@ const lbImg    = document.getElementById('lbImg');
 let lbIndex    = 0;
 function openLightbox(id) { const list = filteredPhotos(); lbIndex = list.findIndex(p => p.id == id); if (lbIndex === -1) return; showLbSlide(list, lbIndex); lightbox.classList.add('open'); document.body.style.overflow = 'hidden'; }
 function showLbSlide(list, idx) { const p = list[idx]; lbImg.src = photoSrc(p); document.getElementById('lbCaption').textContent = p.caption || 'A memory'; document.getElementById('lbMeta').textContent = [p.date, p.tag].filter(Boolean).join(' · '); document.getElementById('lbCounter').textContent = (idx+1) + ' / ' + list.length; }
-function closeLightbox() { lightbox.classList.remove('open'); document.body.style.overflow = ''; lbImg.src = ''; }
+function closeLightbox() {
+  lightbox.classList.remove('open');
+  document.body.style.overflow = '';
+  lbImg.src = '';
+  // Restore nav buttons in case they were hidden by timeline photo viewer
+  document.getElementById('lbDelete').style.display = '';
+  document.getElementById('lbPrev').style.display = '';
+  document.getElementById('lbNext').style.display = '';
+}
 document.getElementById('lbClose').addEventListener('click', closeLightbox);
 lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
 document.getElementById('lbPrev').addEventListener('click', () => { const l = filteredPhotos(); lbIndex = (lbIndex - 1 + l.length) % l.length; showLbSlide(l, lbIndex); });
