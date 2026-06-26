@@ -622,7 +622,7 @@ footer p{font-size:12px;letter-spacing:.04em;}
 
 // ── AUTO CACHE BUSTER ──────────────────────────────────────────
 // Bump SITE_VERSION any time you want all devices to force-refresh.
-const SITE_VERSION = '4';
+const SITE_VERSION = '5';
 if (localStorage.getItem('site_version') !== SITE_VERSION) {
   localStorage.removeItem('siteData');
   localStorage.setItem('site_version', SITE_VERSION);
@@ -735,26 +735,25 @@ async function ghLoadData() {
 }
 
 async function ghGetSHA(path) {
-  // Returns the SHA string if file exists, null if file doesn't exist yet,
-  // or throws on any real error (bad token, network, etc.)
+  // Returns SHA string if file exists, null if file not found yet.
+  // Uses ?t= timestamp to bust GitHub's CDN cache — no custom headers needed
+  // (custom Cache-Control headers break CORS preflight with GitHub's API).
   const cfg = ghCfg();
   const url = 'https://api.github.com/repos/' + cfg.user + '/' + cfg.repo
             + '/contents/' + path + '?ref=' + cfg.branch + '&t=' + Date.now();
   const r = await fetch(url, {
-    cache: 'no-store',
     headers: {
       'Authorization': 'token ' + cfg.token,
-      'Accept': 'application/vnd.github.v3+json',
-      'Cache-Control': 'no-cache'
+      'Accept': 'application/vnd.github.v3+json'
     }
   });
-  if (r.status === 404) return null;         // File doesn't exist yet — OK to create
-  if (r.status === 401) throw new Error('GitHub token is invalid or expired. Please reconfigure.');
-  if (r.status === 403) throw new Error('GitHub token does not have write access to this repo.');
+  if (r.status === 404) return null;
+  if (r.status === 401) throw new Error('GitHub token is invalid or expired.');
+  if (r.status === 403) throw new Error('GitHub token lacks write access to this repo.');
   if (!r.ok) throw new Error('GitHub returned ' + r.status + ' when fetching SHA.');
   const json = await r.json();
-  if (!json.sha) throw new Error('GitHub response missing SHA field.');
-  return json.sha;                           // File exists — return its SHA
+  if (!json.sha) throw new Error('GitHub response missing SHA.');
+  return json.sha;
 }
 
 async function ghSaveData(data) {
