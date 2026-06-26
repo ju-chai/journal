@@ -730,10 +730,34 @@ async function ghPutBinary(path, base64Data, message, sha) {
 
 const DATA_PATH = 'data.json';
 
-async function ghLoadData() {
-  if (!ghReady()) return null;
+async function ghLoadDataPublic() {
+  // Fetch data.json via public raw URL — works without a token on public repos
+  // This is how new devices bootstrap themselves
+  const cfg = ghCfg();
+  const user   = cfg.user   || localStorage.getItem('gh_user')   || '';
+  const repo   = cfg.repo   || localStorage.getItem('gh_repo')   || '';
+  const branch = cfg.branch || localStorage.getItem('gh_branch') || 'main';
+  if (!user || !repo) return null;
   try {
-    setSyncStatus('syncing', 'Loading…');
+    const url = 'https://raw.githubusercontent.com/' + user + '/' + repo + '/' + branch + '/' + DATA_PATH;
+    const r = await fetch(url + '?t=' + Date.now()); // cache-bust
+    if (!r.ok) return null;
+    return await r.json();
+  } catch(e) {
+    return null;
+  }
+}
+
+async function ghLoadData() {
+  // Try public raw URL first (works on all devices without token)
+  setSyncStatus('syncing', 'Loading…');
+  try {
+    const data = await ghLoadDataPublic();
+    if (data) { setSyncStatus('ok', 'Synced'); return data; }
+  } catch(e) { /* fall through to authenticated */ }
+  // Fall back to authenticated API (needed on private repos)
+  if (!ghReady()) { setSyncStatus('ok', ''); return null; }
+  try {
     const file = await ghGet(DATA_PATH);
     if (!file) return null;
     const json = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
@@ -886,10 +910,9 @@ async function unlockSite(plainPassword) {
     setTimeout(() => { if (ls.parentNode) ls.parentNode.removeChild(ls); }, 700);
   }
   await init();
-  // After init, try again — init may have loaded D.encryptedToken from GitHub
-  if (plainPassword && D.encryptedToken && !sessionStorage.getItem('gh_token_s')) {
-    const tok = await decryptToken(D.encryptedToken, plainPassword);
-    if (tok) sessionStorage.setItem('gh_token_s', tok);
+  // After init, we may now have the token — update sync status
+  if (ghReady()) {
+    setSyncStatus('ok', 'Synced');
   }
   if (!wIsSetupDone()) setTimeout(() => wOpen(), 900);
 }
@@ -1098,21 +1121,26 @@ async function init() {
         }
       }
     }
-  } else if (D.encryptedToken) {
-    // No token in storage yet — try to decrypt from cached local data
-    const pp = sessionStorage.getItem('plain_pass_temp') || '';
-    if (pp) {
-      const tok = await decryptToken(D.encryptedToken, pp);
-      if (tok) {
-        sessionStorage.setItem('gh_token_s', tok);
-        // Now we have a token — try loading from GitHub
-        const remote = await ghLoadData();
-        if (remote) { D = mergeDefaults(remote, DEFAULT_DATA); lsSave('siteData', D); }
-      }
-    }
-    setSyncStatus('ok', '');
   } else {
-    setSyncStatus('ok', '');
+    // No token yet — try fetching data.json publicly (works on public repos)
+    const publicData = await ghLoadDataPublic();
+    if (publicData) {
+      D = mergeDefaults(publicData, DEFAULT_DATA);
+      lsSave('siteData', D);
+      // If it has an encrypted token, decrypt it with the session password
+      if (D.encryptedToken) {
+        const pp = sessionStorage.getItem('plain_pass_temp') || '';
+        if (pp) {
+          const tok = await decryptToken(D.encryptedToken, pp);
+          if (tok) {
+            sessionStorage.setItem('gh_token_s', tok);
+            setSyncStatus('ok', 'Synced');
+          }
+        }
+      }
+    } else {
+      setSyncStatus('ok', '');
+    }
   }
   applyTexts();
   renderTimeline();
