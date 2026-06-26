@@ -167,17 +167,90 @@ body.editing #editBanner{display:block;}
 .gallery-filter{display:flex;gap:.5rem;flex-wrap:wrap;}
 .filter-btn{font-family:var(--sans);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 16px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;}
 .filter-btn:hover,.filter-btn.active{background:var(--rose);border-color:var(--rose);color:white;}
-.gallery-grid{columns:3;gap:12px;}
-@media(max-width:700px){.gallery-grid{columns:2;}}
-@media(max-width:440px){.gallery-grid{columns:1;}}
-.gallery-item{break-inside:avoid;margin-bottom:12px;position:relative;border-radius:8px;overflow:hidden;cursor:pointer;transform:translateY(0);transition:transform .35s cubic-bezier(.25,.46,.45,.94),box-shadow .35s ease;}
-.gallery-item:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(58,37,32,.15);}
-.gallery-item img{transition:transform .5s cubic-bezier(.25,.46,.45,.94);}
-.gallery-item:hover img{transform:scale(1.06);}
-.gallery-item .overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(40,20,15,.75) 0%,rgba(40,20,15,.1) 60%,transparent 100%);opacity:0;transition:opacity .4s ease;display:flex;flex-direction:column;justify-content:flex-end;padding:1rem;}
-.gallery-item:hover .overlay{opacity:1;}
-.overlay-caption{font-family:var(--serif);font-style:italic;font-size:15px;color:white;line-height:1.3;}
-.overlay-date{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-top:2px;}
+/* ── POLAROID GALLERY ── */
+.gallery-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:1.8rem;
+}
+@media(max-width:900px){.gallery-grid{grid-template-columns:repeat(3,1fr);gap:1.4rem;}}
+@media(max-width:600px){.gallery-grid{grid-template-columns:repeat(2,1fr);gap:1rem;}}
+
+.gallery-item{
+  background:white;
+  padding:10px 10px 44px;
+  box-shadow:0 2px 8px rgba(58,37,32,.1),0 0 0 0.5px rgba(58,37,32,.06);
+  border-radius:2px;
+  cursor:pointer;
+  transform:rotate(var(--tilt,0deg)) translateY(0);
+  transition:transform .35s cubic-bezier(.25,.46,.45,.94),box-shadow .35s ease;
+  position:relative;
+}
+.gallery-item:hover{
+  transform:rotate(0deg) translateY(-6px) scale(1.03);
+  box-shadow:0 16px 48px rgba(58,37,32,.18),0 0 0 0.5px rgba(58,37,32,.08);
+  z-index:2;
+}
+.gallery-item:nth-child(4n+1){--tilt:-1.2deg;}
+.gallery-item:nth-child(4n+2){--tilt: 0.8deg;}
+.gallery-item:nth-child(4n+3){--tilt:-0.6deg;}
+.gallery-item:nth-child(4n+4){--tilt: 1.4deg;}
+.gallery-item img{
+  width:100%;
+  aspect-ratio:1/1;
+  object-fit:cover;
+  display:block;
+  border-radius:1px;
+}
+.polaroid-caption{
+  position:absolute;
+  bottom:0;left:0;right:0;
+  padding:8px 10px 10px;
+  text-align:center;
+}
+.polaroid-caption-text{
+  font-family:var(--serif);
+  font-style:italic;
+  font-size:13px;
+  color:var(--warm);
+  line-height:1.3;
+  display:block;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.polaroid-date{
+  font-size:9px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-top:2px;
+  display:block;
+}
+/* Pagination */
+.gallery-pagination{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.6rem;
+  margin-top:2.5rem;
+  flex-wrap:wrap;
+}
+.page-btn{
+  width:36px;height:36px;
+  border-radius:50%;
+  border:1px solid var(--border);
+  background:transparent;
+  font-family:var(--sans);
+  font-size:13px;
+  color:var(--muted);
+  cursor:pointer;
+  transition:all .2s;
+  display:flex;align-items:center;justify-content:center;
+}
+.page-btn:hover{border-color:var(--rose);color:var(--rose);}
+.page-btn.active{background:var(--rose);border-color:var(--rose);color:white;}
+.page-btn.prev-next{width:auto;padding:0 14px;border-radius:100px;font-size:12px;letter-spacing:.06em;}
 .gallery-empty{display:none;text-align:center;padding:3rem 1rem;color:var(--muted);}
 .gallery-empty svg{opacity:.3;margin-bottom:.8rem;}
 
@@ -517,6 +590,7 @@ footer p{font-size:12px;letter-spacing:.04em;}
         <p>Your photos will appear here.<br>Click <strong>Add photos</strong> to get started.</p>
       </div>
     </div>
+    <div class="gallery-pagination" id="galleryPagination"></div>
   </div>
 </section>
 
@@ -1611,26 +1685,92 @@ document.getElementById('saveNote').addEventListener('click', async () => {
 let currentFilter = 'all';
 function photoSrc(p) { return p.url || p.dataUrl || ''; }
 
+const PHOTOS_PER_PAGE = 12;
+let currentPage = 1;
+
+function filteredPhotos() {
+  return currentFilter === 'all' ? D.photos : D.photos.filter(p => p.tag === currentFilter);
+}
+
 function renderGallery() {
-  const grid = document.getElementById('galleryGrid');
+  const grid  = document.getElementById('galleryGrid');
   const empty = document.getElementById('galleryEmpty');
+  const pagination = document.getElementById('galleryPagination');
   grid.querySelectorAll('.gallery-item').forEach(el => el.remove());
-  const filtered = currentFilter === 'all' ? D.photos : D.photos.filter(p => p.tag === currentFilter);
+
+  const filtered = filteredPhotos();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PHOTOS_PER_PAGE));
+
+  // Clamp currentPage
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  const start = (currentPage - 1) * PHOTOS_PER_PAGE;
+  const pagePhotos = filtered.slice(start, start + PHOTOS_PER_PAGE);
+
   empty.style.display = filtered.length === 0 ? 'block' : 'none';
   if (!grid.contains(empty)) grid.appendChild(empty);
-  filtered.forEach(photo => {
-    const item = document.createElement('div'); item.className = 'gallery-item'; item.dataset.tag = photo.tag; item.dataset.id = photo.id;
-    item.innerHTML = '<img src="' + photoSrc(photo) + '" alt="' + (photo.caption||'') + '" loading="lazy" style="display:block;width:100%;border-radius:8px;"/>' +
-      '<div class="overlay"><div class="overlay-caption">' + (photo.caption||'A memory') + '</div><div class="overlay-date">' + (photo.date||'') + '</div></div>';
+
+  pagePhotos.forEach(photo => {
+    const item = document.createElement('div');
+    item.className = 'gallery-item';
+    item.dataset.tag = photo.tag;
+    item.dataset.id  = photo.id;
+    const caption = photo.caption || 'a memory ♡';
+    const date    = photo.date    || '';
+    item.innerHTML =
+      '<img src="' + photoSrc(photo) + '" alt="' + caption + '" loading="lazy"/>' +
+      '<div class="polaroid-caption">' +
+        '<span class="polaroid-caption-text">' + caption + '</span>' +
+        (date ? '<span class="polaroid-date">' + date + '</span>' : '') +
+      '</div>';
     item.addEventListener('click', () => openLightbox(photo.id));
     grid.insertBefore(item, empty);
   });
+
+  // Render pagination
+  pagination.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const prev = document.createElement('button');
+  prev.className = 'page-btn prev-next';
+  prev.textContent = '← Prev';
+  prev.disabled = currentPage === 1;
+  prev.addEventListener('click', () => { currentPage--; renderGallery(); grid.scrollIntoView({behavior:'smooth',block:'start'}); });
+  pagination.appendChild(prev);
+
+  // Page number buttons (show max 5)
+  const range = 2;
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentPage - range && i <= currentPage + range)) {
+      const btn = document.createElement('button');
+      btn.className = 'page-btn' + (i === currentPage ? ' active' : '');
+      btn.textContent = i;
+      btn.addEventListener('click', () => { currentPage = i; renderGallery(); grid.scrollIntoView({behavior:'smooth',block:'start'}); });
+      pagination.appendChild(btn);
+    } else if (i === currentPage - range - 1 || i === currentPage + range + 1) {
+      const dots = document.createElement('span');
+      dots.textContent = '…';
+      dots.style.cssText = 'color:var(--muted);font-size:13px;padding:0 4px;';
+      pagination.appendChild(dots);
+    }
+  }
+
+  const next = document.createElement('button');
+  next.className = 'page-btn prev-next';
+  next.textContent = 'Next →';
+  next.disabled = currentPage === totalPages;
+  next.addEventListener('click', () => { currentPage++; renderGallery(); grid.scrollIntoView({behavior:'smooth',block:'start'}); });
+  pagination.appendChild(next);
 }
 
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active'); currentFilter = btn.dataset.filter; renderGallery();
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    currentPage = 1; // reset to first page on filter change
+    renderGallery();
   });
 });
 
@@ -1704,7 +1844,6 @@ function compressImage(dataUrl, maxW, quality, cb) {
 const lightbox = document.getElementById('lightbox');
 const lbImg    = document.getElementById('lbImg');
 let lbIndex    = 0;
-function filteredPhotos() { return currentFilter === 'all' ? D.photos : D.photos.filter(p => p.tag === currentFilter); }
 function openLightbox(id) { const list = filteredPhotos(); lbIndex = list.findIndex(p => p.id == id); if (lbIndex === -1) return; showLbSlide(list, lbIndex); lightbox.classList.add('open'); document.body.style.overflow = 'hidden'; }
 function showLbSlide(list, idx) { const p = list[idx]; lbImg.src = photoSrc(p); document.getElementById('lbCaption').textContent = p.caption || 'A memory'; document.getElementById('lbMeta').textContent = [p.date, p.tag].filter(Boolean).join(' · '); document.getElementById('lbCounter').textContent = (idx+1) + ' / ' + list.length; }
 function closeLightbox() { lightbox.classList.remove('open'); document.body.style.overflow = ''; lbImg.src = ''; }
