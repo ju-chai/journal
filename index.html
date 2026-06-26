@@ -730,6 +730,7 @@ async function ghSaveData(data) {
   if (!ghReady()) { lsSave('siteData', data); return; }
   setSyncStatus('syncing', 'Saving…');
   try {
+    // Always fetch the latest SHA fresh before saving to avoid mismatch errors
     const existing = await ghGet(DATA_PATH);
     const sha = existing ? existing.sha : undefined;
     await ghPut(DATA_PATH, JSON.stringify(data, null, 2), 'Update site data', sha);
@@ -737,9 +738,27 @@ async function ghSaveData(data) {
     setSyncStatus('ok', 'Saved');
     setTimeout(() => setSyncStatus('ok', ''), 2500);
   } catch(e) {
-    setSyncStatus('error', 'Save failed');
-    alert('Could not save to GitHub: ' + e.message + '\n\nChanges saved locally as backup.');
-    lsSave('siteData', data);
+    if (e.message && e.message.includes('does not match')) {
+      // SHA mismatch — silently retry once with a fresh fetch
+      try {
+        setSyncStatus('syncing', 'Retrying…');
+        const retry = await ghGet(DATA_PATH);
+        const retrySha = retry ? retry.sha : undefined;
+        await ghPut(DATA_PATH, JSON.stringify(data, null, 2), 'Update site data', retrySha);
+        lsSave('siteData', data);
+        setSyncStatus('ok', 'Saved');
+        setTimeout(() => setSyncStatus('ok', ''), 2500);
+        return;
+      } catch(e2) {
+        setSyncStatus('error', 'Save failed');
+        alert('Could not save to GitHub: ' + e2.message + '\n\nChanges saved locally as backup.');
+        lsSave('siteData', data);
+      }
+    } else {
+      setSyncStatus('error', 'Save failed');
+      alert('Could not save to GitHub: ' + e.message + '\n\nChanges saved locally as backup.');
+      lsSave('siteData', data);
+    }
   }
 }
 
