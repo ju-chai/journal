@@ -620,6 +620,14 @@ footer p{font-size:12px;letter-spacing:.04em;}
 <script>
 'use strict';
 
+// ── AUTO CACHE BUSTER ──────────────────────────────────────────
+// Bump SITE_VERSION any time you want all devices to force-refresh.
+const SITE_VERSION = '2';
+if (localStorage.getItem('site_version') !== SITE_VERSION) {
+  localStorage.removeItem('siteData');
+  localStorage.setItem('site_version', SITE_VERSION);
+}
+
 // ═══════════════════════════════════════════════════════
 //  GITHUB API
 // ═══════════════════════════════════════════════════════
