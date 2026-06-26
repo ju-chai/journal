@@ -726,39 +726,37 @@ async function ghLoadData() {
   }
 }
 
+async function ghGetSHA(path) {
+  // Always fetch a fresh SHA directly from GitHub API — never use a cached one
+  try {
+    const c = ghCfg();
+    const r = await fetch(
+      'https://api.github.com/repos/' + c.user + '/' + c.repo + '/contents/' + path + '?ref=' + c.branch,
+      { headers: { 'Authorization': 'token ' + c.token, 'Accept': 'application/vnd.github.v3+json' } }
+    );
+    if (!r.ok) return undefined;
+    const json = await r.json();
+    return json.sha;
+  } catch(e) {
+    return undefined;
+  }
+}
+
 async function ghSaveData(data) {
   if (!ghReady()) { lsSave('siteData', data); return; }
   setSyncStatus('syncing', 'Saving…');
   try {
-    // Always fetch the latest SHA fresh before saving to avoid mismatch errors
-    const existing = await ghGet(DATA_PATH);
-    const sha = existing ? existing.sha : undefined;
+    // Always get a live SHA right before writing — prevents stale SHA errors
+    // across multiple devices editing simultaneously
+    const sha = await ghGetSHA(DATA_PATH);
     await ghPut(DATA_PATH, JSON.stringify(data, null, 2), 'Update site data', sha);
     lsSave('siteData', data);
     setSyncStatus('ok', 'Saved');
     setTimeout(() => setSyncStatus('ok', ''), 2500);
   } catch(e) {
-    if (e.message && e.message.includes('does not match')) {
-      // SHA mismatch — silently retry once with a fresh fetch
-      try {
-        setSyncStatus('syncing', 'Retrying…');
-        const retry = await ghGet(DATA_PATH);
-        const retrySha = retry ? retry.sha : undefined;
-        await ghPut(DATA_PATH, JSON.stringify(data, null, 2), 'Update site data', retrySha);
-        lsSave('siteData', data);
-        setSyncStatus('ok', 'Saved');
-        setTimeout(() => setSyncStatus('ok', ''), 2500);
-        return;
-      } catch(e2) {
-        setSyncStatus('error', 'Save failed');
-        alert('Could not save to GitHub: ' + e2.message + '\n\nChanges saved locally as backup.');
-        lsSave('siteData', data);
-      }
-    } else {
-      setSyncStatus('error', 'Save failed');
-      alert('Could not save to GitHub: ' + e.message + '\n\nChanges saved locally as backup.');
-      lsSave('siteData', data);
-    }
+    setSyncStatus('error', 'Save failed');
+    alert('Could not save to GitHub: ' + e.message + '\n\nChanges saved locally as backup.');
+    lsSave('siteData', data);
   }
 }
 
@@ -768,8 +766,8 @@ async function ghSavePhoto(filename, base64data, caption, date, tag) {
   if (!ghReady()) return { localOnly: true, dataUrl: base64data, id: Date.now() + Math.random(), caption, date, tag };
   setSyncStatus('syncing', 'Uploading photo…');
   try {
-    const existing = await ghGet(path);
-    const sha = existing ? existing.sha : undefined;
+    // Always fetch a live SHA before writing to avoid stale SHA errors
+    const sha = await ghGetSHA(path);
     await ghPutBinary(path, b64, 'Add photo: ' + filename, sha);
     const c = ghCfg();
     const url = `https://raw.githubusercontent.com/${c.user}/${c.repo}/${c.branch}/${path}`;
