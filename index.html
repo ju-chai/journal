@@ -501,16 +501,17 @@ footer p{font-size:12px;letter-spacing:.04em;}
       <h2 class="wizard-title">Create a<br><em>secret key</em></h2>
       <p class="wizard-body">
         GitHub needs a key so the site can save your content there. Here's how to get one:<br><br>
-        <strong>1.</strong> Open <a href="https://github.com/settings/tokens?type=beta" target="_blank">GitHub → Settings → Developer settings → Fine-grained tokens</a><br>
-        <strong>2.</strong> Click <strong>Generate new token</strong><br>
+        <strong>1.</strong> Open <a href="https://github.com/settings/tokens" target="_blank">GitHub → Settings → Developer settings → Personal access tokens (classic)</a><br>
+        <strong>2.</strong> Click <strong>Generate new token (classic)</strong><br>
         <strong>3.</strong> Name it anything, set expiry to <strong>No expiration</strong><br>
-        <strong>4.</strong> Under <strong>Repository access</strong>, choose <strong>Only select repositories</strong> → pick your repo<br>
-        <strong>5.</strong> Under <strong>Permissions → Contents</strong>, set to <strong>Read and Write</strong><br>
-        <strong>6.</strong> Click <strong>Generate token</strong> and paste it below
+        <strong>4.</strong> Check <strong>repo</strong> and <strong>gist</strong> scopes<br>
+        <strong>5.</strong> Click <strong>Generate token</strong> and paste it below
       </p>
       <label class="wizard-label">Personal access token</label>
       <input class="wizard-input" id="wToken" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off"/>
-      <div class="wizard-err" id="wErr2">Please paste your token.</div>
+      <label class="wizard-label" style="margin-top:.5rem;">Your site password <span style="color:var(--muted);font-size:11px;">(needed to encrypt the token)</span></label>
+      <input class="wizard-input" id="wPassConfirm" type="password" placeholder="enter your site password" autocomplete="off"/>
+      <div class="wizard-err" id="wErr2">Please fill in both fields.</div>
       <div class="wizard-actions">
         <button class="wizard-btn-primary" onclick="wStep2Next()">Test connection →</button>
         <button class="wizard-btn-skip" onclick="wGoTo(1)">← Back</button>
@@ -1282,7 +1283,9 @@ async function wStep2Next() {
   const err     = document.getElementById('wErr2');
   const testing = document.getElementById('wTesting');
   const btn     = document.querySelector('#wstep2 .wizard-btn-primary');
+  const passConfirm = document.getElementById('wPassConfirm') ? document.getElementById('wPassConfirm').value.trim() : '';
   if (!token) { err.textContent = 'Please paste your token.'; err.classList.add('show'); return; }
+  if (!passConfirm && !sessionStorage.getItem('plain_pass_temp')) { err.textContent = 'Please enter your site password.'; err.classList.add('show'); return; }
   err.classList.remove('show');
   testing.classList.add('show');
   btn.disabled = true;
@@ -1311,7 +1314,10 @@ async function wStep2Next() {
     }
 
     // Encrypt both token AND gist ID with the site password
-    const plainPass = sessionStorage.getItem('plain_pass_temp') || '';
+    // Use the password entered in the wizard — most reliable source
+    const plainPass = document.getElementById('wPassConfirm').value.trim()
+                   || sessionStorage.getItem('plain_pass_temp')
+                   || '';
     if (plainPass) {
       D.encryptedToken  = await encryptToken(token, plainPass);
       D.encryptedGistId = await encryptToken(gistId, plainPass);
