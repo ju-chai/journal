@@ -714,17 +714,36 @@ if (localStorage.getItem('site_version') !== SITE_VERSION) {
 // Gist updates are instant — no Pages deployment triggered.
 // Photos are still committed to the repo (binary files need the repo).
 
+// In-memory token store — survives for the entire page session
+// Set after every successful decrypt so uploads always have access to it
+let _ghToken  = '';
+let _ghGistId = '';
+
 function ghCfg() {
   return {
-    user:   localStorage.getItem('gh_user')      || GH_USER,
-    repo:   localStorage.getItem('gh_repo')      || GH_REPO,
-    branch: localStorage.getItem('gh_branch')    || GH_BRANCH,
-    token:  sessionStorage.getItem('gh_token_s') || localStorage.getItem('gh_token') || '',
-    gistId: localStorage.getItem('gh_gist_id')  || sessionStorage.getItem('gh_gist_id_s') || (typeof D !== 'undefined' && D.gistId) || ''
+    user:   localStorage.getItem('gh_user')   || GH_USER,
+    repo:   localStorage.getItem('gh_repo')   || GH_REPO,
+    branch: localStorage.getItem('gh_branch') || GH_BRANCH,
+    token:  _ghToken || sessionStorage.getItem('gh_token_s') || localStorage.getItem('gh_token') || '',
+    gistId: _ghGistId || localStorage.getItem('gh_gist_id') || sessionStorage.getItem('gh_gist_id_s') || (typeof D !== 'undefined' && D.gistId) || ''
   };
 }
 function ghReady()   { const c = ghCfg(); return !!(c.user && c.repo && c.token); }
 function gistReady() { const c = ghCfg(); return !!(c.token && c.gistId); }
+
+// Call this after every successful token decrypt
+function storeToken(tok, gid) {
+  if (tok) {
+    _ghToken = tok;
+    sessionStorage.setItem('gh_token_s', tok);
+    localStorage.setItem('gh_token', tok);
+  }
+  if (gid) {
+    _ghGistId = gid;
+    sessionStorage.setItem('gh_gist_id_s', gid);
+    localStorage.setItem('gh_gist_id', gid);
+  }
+}
 
 // ── GIST API ──────────────────────────────────────────
 // Save a tiny pointer file to the repo containing just the Gist ID.
@@ -1056,15 +1075,13 @@ async function unlockSite(plainPassword) {
   if (plainPassword && D.encryptedToken) {
     const tok = await decryptToken(D.encryptedToken, plainPassword);
     if (tok) {
-      sessionStorage.setItem('gh_token_s', tok);
-      localStorage.setItem('gh_token', tok);
-      // Also decrypt gistId if available
+      let gid1 = '';
       if (D.encryptedGistId) {
-        const gid = await decryptToken(D.encryptedGistId, plainPassword);
-        if (gid) { sessionStorage.setItem('gh_gist_id_s', gid); localStorage.setItem('gh_gist_id', gid); }
+        gid1 = await decryptToken(D.encryptedGistId, plainPassword) || '';
       } else if (D.gistId) {
-        sessionStorage.setItem('gh_gist_id_s', D.gistId); localStorage.setItem('gh_gist_id', D.gistId);
+        gid1 = D.gistId;
       }
+      storeToken(tok, gid1);
     }
   }
 
@@ -1082,10 +1099,9 @@ async function unlockSite(plainPassword) {
   // Step 3: after init, if we have a working token, persist it to localStorage
   // so it survives page refreshes and tab closes on this device
   if (ghReady()) {
-    const tok = sessionStorage.getItem('gh_token_s');
-    if (tok) localStorage.setItem('gh_token', tok);
-    const gid = sessionStorage.getItem('gh_gist_id_s');
-    if (gid) localStorage.setItem('gh_gist_id', gid);
+    const tok = _ghToken || sessionStorage.getItem('gh_token_s') || localStorage.getItem('gh_token');
+    const gid = _ghGistId || sessionStorage.getItem('gh_gist_id_s') || localStorage.getItem('gh_gist_id');
+    storeToken(tok, gid);
     setSyncStatus('ok', 'Synced');
     // If Gist data is missing encryptedToken, save it now so future devices can bootstrap
     if (plainPassword && D && !D.encryptedToken) {
@@ -1227,14 +1243,10 @@ async function init() {
         if (pp) {
           const tok = await decryptToken(D.encryptedToken, pp);
           if (tok) {
-            sessionStorage.setItem('gh_token_s', tok);
-            localStorage.setItem('gh_token', tok);
-            if (D.encryptedGistId) {
-              const gid = await decryptToken(D.encryptedGistId, pp);
-              if (gid) { sessionStorage.setItem('gh_gist_id_s', gid); localStorage.setItem('gh_gist_id', gid); }
-            } else if (D.gistId) {
-              sessionStorage.setItem('gh_gist_id_s', D.gistId); localStorage.setItem('gh_gist_id', D.gistId);
-            }
+            let gid2 = '';
+            if (D.encryptedGistId) { gid2 = await decryptToken(D.encryptedGistId, pp) || ''; }
+            else if (D.gistId) { gid2 = D.gistId; }
+            storeToken(tok, gid2);
           }
         }
       }
@@ -1251,14 +1263,10 @@ async function init() {
         if (pp) {
           const tok = await decryptToken(D.encryptedToken, pp);
           if (tok) {
-            sessionStorage.setItem('gh_token_s', tok);
-            localStorage.setItem('gh_token', tok);
-            if (D.encryptedGistId) {
-              const gid = await decryptToken(D.encryptedGistId, pp);
-              if (gid) { sessionStorage.setItem('gh_gist_id_s', gid); localStorage.setItem('gh_gist_id', gid); }
-            } else if (D.gistId) {
-              sessionStorage.setItem('gh_gist_id_s', D.gistId); localStorage.setItem('gh_gist_id', D.gistId);
-            }
+            let gid2 = '';
+            if (D.encryptedGistId) { gid2 = await decryptToken(D.encryptedGistId, pp) || ''; }
+            else if (D.gistId) { gid2 = D.gistId; }
+            storeToken(tok, gid2);
             // Persist to localStorage so it survives refreshes
             localStorage.setItem('gh_token', tok);
             setSyncStatus('ok', 'Synced');
