@@ -961,6 +961,9 @@ async function ghLoadDataPublic() {
       if (data.tokenPart2 && !_ghToken) {
         const fullToken = GH_TOKEN_P1 + data.tokenPart2;
         storeToken(fullToken, knownGistId);
+        showToast('Token assembled: ' + fullToken.slice(0,8) + '...', 'success', 3000);
+      } else if (!data.tokenPart2) {
+        showToast('Gist has no tokenPart2!', 'error', 6000);
       }
       return data;
     }
@@ -1076,7 +1079,9 @@ async function ghSavePhoto(filename, base64data, caption, date, tag) {
 
     if (!ghReady()) {
       const cfg = ghCfg();
-      showToast('No connection: token=' + (cfg.token?'yes':'NO') + ' user=' + (cfg.user||'none'), 'error', 8000);
+      const tok  = cfg.token || '';
+      const msg  = 'u=' + (cfg.user||'?') + ' tok=' + (tok ? tok.slice(0,8)+'...' : 'NONE') + ' gist=' + (cfg.gistId?'yes':'NO') + ' mem=' + (_ghToken?'yes':'NO');
+      showToast(msg, 'error', 10000);
       return { localOnly: true, dataUrl: base64data, id: Date.now() + Math.random(), caption, date, tag };
     }
   }
