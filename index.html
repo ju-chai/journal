@@ -65,9 +65,11 @@ img{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;
 .passcode-dot.shake{animation:shake .4s ease;}
 .passcode-error{font-size:12px;color:var(--rose);letter-spacing:.06em;height:18px;text-align:center;margin-bottom:.8rem;}
 .passcode-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:min(260px,80vw);margin:0 auto;}
-.passcode-key{width:72px;height:72px;border-radius:50%;border:1px solid rgba(201,133,122,.3);background:rgba(253,248,244,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .1s;margin:0 auto;-webkit-tap-highlight-color:transparent;}
-.passcode-key:active{background:rgba(201,133,122,.18);transform:scale(.94);}
-.passcode-key.empty{background:transparent;border:none;cursor:default;}
+.passcode-keypad{position:relative;z-index:2;}
+.passcode-dots{position:relative;z-index:2;}
+.passcode-key{width:72px;height:72px;border-radius:50%;border:1px solid rgba(201,133,122,.3);background:rgba(253,248,244,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .1s;margin:0 auto;-webkit-tap-highlight-color:transparent;position:relative;z-index:2;touch-action:manipulation;user-select:none;-webkit-user-select:none;}
+.passcode-key:active{background:rgba(201,133,122,.25);transform:scale(.94);}
+.passcode-key.empty{background:transparent;border:none;cursor:default;pointer-events:none;}
 .passcode-key-num{font-family:var(--sans);font-size:24px;font-weight:300;color:var(--walnut);line-height:1;}
 .passcode-key-letters{font-size:9px;letter-spacing:.12em;color:var(--muted);margin-top:2px;}
 .passcode-del{font-size:20px;color:var(--muted);}
@@ -107,9 +109,11 @@ img{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;
 .passcode-dot.shake{animation:shake .4s ease;}
 .passcode-error{font-size:12px;color:var(--rose);letter-spacing:.06em;height:18px;text-align:center;margin-bottom:.8rem;}
 .passcode-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:min(260px,80vw);margin:0 auto;}
-.passcode-key{width:72px;height:72px;border-radius:50%;border:1px solid rgba(201,133,122,.3);background:rgba(253,248,244,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .1s;margin:0 auto;-webkit-tap-highlight-color:transparent;}
-.passcode-key:active{background:rgba(201,133,122,.18);transform:scale(.94);}
-.passcode-key.empty{background:transparent;border:none;cursor:default;}
+.passcode-keypad{position:relative;z-index:2;}
+.passcode-dots{position:relative;z-index:2;}
+.passcode-key{width:72px;height:72px;border-radius:50%;border:1px solid rgba(201,133,122,.3);background:rgba(253,248,244,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .1s;margin:0 auto;-webkit-tap-highlight-color:transparent;position:relative;z-index:2;touch-action:manipulation;user-select:none;-webkit-user-select:none;}
+.passcode-key:active{background:rgba(201,133,122,.25);transform:scale(.94);}
+.passcode-key.empty{background:transparent;border:none;cursor:default;pointer-events:none;}
 .passcode-key-num{font-family:var(--sans);font-size:24px;font-weight:300;color:var(--walnut);line-height:1;}
 .passcode-key-letters{font-size:9px;letter-spacing:.12em;color:var(--muted);margin-top:2px;}
 .passcode-del{font-size:20px;color:var(--muted);}
@@ -145,7 +149,7 @@ body.editing #editBanner{display:block;}
 #hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:5rem 2rem 3rem;position:relative;overflow:hidden;background:linear-gradient(135deg,#fdf8f4 0%,#f9ede6 25%,#fdf3ef 50%,#f5e8e0 75%,#fdf8f4 100%);background-size:400% 400%;animation:gradientShift 12s ease infinite;}
 @keyframes gradientShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
 .hero-bg-petals{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
-.petal{position:absolute;opacity:0;animation:fall linear infinite;pointer-events:none;}
+.petal{position:absolute;opacity:0;animation:fall linear infinite;pointer-events:none !important;}
 .petal.type-petal{width:7px;height:7px;border-radius:50% 50% 50% 0;background:var(--blush);}
 .petal.type-heart{width:8px;height:8px;background:none;color:var(--rose);font-size:9px;line-height:1;}
 .petal.type-circle{width:4px;height:4px;border-radius:50%;background:var(--sagePale);}
@@ -1286,8 +1290,20 @@ if (isUnlocked()) {
     }
   }
 
+  function addTapHandler(el, fn) {
+    // Use touchend for snappy mobile response, fall back to click on desktop
+    let touched = false;
+    el.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      touched = true;
+      fn();
+      setTimeout(() => { touched = false; }, 300);
+    }, { passive: false });
+    el.addEventListener('click', () => { if (!touched) fn(); });
+  }
+
   document.querySelectorAll('.passcode-key[data-n]').forEach(key => {
-    key.addEventListener('click', async () => {
+    addTapHandler(key, async () => {
       if (passcodeEntered.length >= 6) return;
       passcodeEntered += key.dataset.n;
       updateDots();
@@ -1295,7 +1311,7 @@ if (isUnlocked()) {
     });
   });
 
-  document.getElementById('passcodeDelBtn').addEventListener('click', () => {
+  addTapHandler(document.getElementById('passcodeDelBtn'), () => {
     passcodeEntered = passcodeEntered.slice(0, -1);
     updateDots();
     document.getElementById('lockError').textContent = '';
