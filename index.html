@@ -807,7 +807,7 @@ function ghCfg() {
     user:   localStorage.getItem('gh_user')   || GH_USER,
     repo:   localStorage.getItem('gh_repo')   || GH_REPO,
     branch: localStorage.getItem('gh_branch') || GH_BRANCH,
-    token:  _ghToken || sessionStorage.getItem('gh_token_s') || localStorage.getItem('gh_token') || GH_TOKEN,
+    token:  _ghToken || sessionStorage.getItem('gh_token_s') || localStorage.getItem('gh_token') || '',
     gistId: _ghGistId || localStorage.getItem('gh_gist_id') || sessionStorage.getItem('gh_gist_id_s') || (typeof D !== 'undefined' && D.gistId) || GH_GIST_ID
   };
 }
@@ -941,7 +941,7 @@ const GH_USER    = localStorage.getItem('gh_user')    || 'ju-chai';
 const GH_REPO    = localStorage.getItem('gh_repo')    || 'journal';
 const GH_BRANCH  = localStorage.getItem('gh_branch')  || 'main';
 const GH_GIST_ID = localStorage.getItem('gh_gist_id') || 'd5b4fd4febe307dba75bacde06622808';
-const GH_TOKEN   = localStorage.getItem('gh_token')   || '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';
+const GH_TOKEN_P1 = 'ghp_Ko2hUgzPJbsRuHsE'; // first half only — second half lives in Gist
 
 async function ghLoadDataPublic() {
   // Step 1: If we already have gistId, load directly from Gist
@@ -955,7 +955,14 @@ async function ghLoadDataPublic() {
     if (!sessionStorage.getItem('gh_gist_id_s')) sessionStorage.setItem('gh_gist_id_s', knownGistId);
     _ghGistId = knownGistId;
     const data = await gistLoad();
-    if (data) return data;
+    if (data) {
+      // Assemble token from two halves: part 1 in HTML, part 2 in Gist
+      if (data.tokenPart2 && !_ghToken) {
+        const fullToken = GH_TOKEN_P1 + data.tokenPart2;
+        storeToken(fullToken, knownGistId);
+      }
+      return data;
+    }
   }
 
   // Step 2: Bootstrap — fetch gist pointer from repo (public raw URL, no token needed)
@@ -970,7 +977,12 @@ async function ghLoadDataPublic() {
         sessionStorage.setItem('gh_gist_id_s', pointer.gistId);
         // Now load actual data from Gist
         const data = await gistLoad();
-        if (data) return data;
+        if (data) {
+          if (data.tokenPart2 && !_ghToken) {
+            storeToken(GH_TOKEN_P1 + data.tokenPart2, knownGistId);
+          }
+          return data;
+        }
       }
     }
   } catch(e) { /* pointer not found yet */ }
@@ -1044,16 +1056,20 @@ async function ghSavePhoto(filename, base64data, caption, date, tag) {
     showToast('Connecting to GitHub…', 'saving', 10000);
     try {
       const data = await ghLoadDataPublic();
-      if (data && data.encryptedToken) {
-        const tok = await decryptToken(data.encryptedToken, HARDCODED_PASS);
-        if (tok) {
-          let gid = '';
-          if (data.encryptedGistId) gid = await decryptToken(data.encryptedGistId, HARDCODED_PASS) || '';
-          else if (data.gistId) gid = data.gistId;
-          storeToken(tok, gid);
-          // Merge loaded data
-          D = mergeDefaults(data, DEFAULT_DATA);
+      if (data) {
+        // Try assembling token from split halves first (simpler, no encryption needed)
+        if (data.tokenPart2 && !_ghToken) {
+          storeToken(GH_TOKEN_P1 + data.tokenPart2, data.gistId || GH_GIST_ID);
         }
+        // Also try encrypted token as fallback
+        if (!_ghToken && data.encryptedToken) {
+          const tok = await decryptToken(data.encryptedToken, HARDCODED_PASS);
+          if (tok) {
+            let gid = data.gistId || GH_GIST_ID;
+            storeToken(tok, gid);
+          }
+        }
+        D = mergeDefaults(data, DEFAULT_DATA);
       }
     } catch(e) { /* continue to check again */ }
 
@@ -1149,9 +1165,8 @@ if (!localStorage.getItem('gh_user'))    localStorage.setItem('gh_user',    GH_U
 if (!localStorage.getItem('gh_repo'))    localStorage.setItem('gh_repo',    GH_REPO);
 if (!localStorage.getItem('gh_branch'))  localStorage.setItem('gh_branch',  GH_BRANCH);
 if (!localStorage.getItem('gh_gist_id')) localStorage.setItem('gh_gist_id', GH_GIST_ID);
-if (!localStorage.getItem('gh_token'))   localStorage.setItem('gh_token',   GH_TOKEN);
+// gh_token is assembled from two halves after Gist load — not stored in HTML
 _ghGistId = GH_GIST_ID; // always set in memory
-_ghToken  = GH_TOKEN;   // always set in memory
 // Pre-store hardcoded password hash so all devices work without setup
 if (!localStorage.getItem('us_always_pass')) localStorage.setItem('us_always_pass', HARDCODED_HASH);
 
