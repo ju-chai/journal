@@ -572,7 +572,7 @@ footer p{font-size:12px;letter-spacing:.04em;}
   </div>
   <!-- Hidden input still needed for set-password flow -->
   <input id="lockInput" type="hidden" value=""/>
-  <p class="lock-hint" style="margin-top:1.5rem;">First time? <a id="lockSetupLink">Set your password</a></p>
+  <p class="lock-hint" style="margin-top:1.5rem;opacity:0;pointer-events:none;">.</p>
 </div>
 
 <!-- SET PASSWORD MODAL -->
@@ -1109,10 +1109,14 @@ D = mergeDefaults(D, DEFAULT_DATA);
 // ═══════════════════════════════════════════════════════
 const PASS_KEY    = 'us_always_pass';
 const SESSION_KEY = 'us_always_session';
+// Hardcoded password hash — change '112423' in the HTML to update the passcode
+const HARDCODED_HASH = '85ba58b8131b577f3499c81a6a8ed839f9492471b704a4b5e2bdeb2125bfc238';
 // Pre-populate repo config in localStorage
 if (!localStorage.getItem('gh_user'))   localStorage.setItem('gh_user',   GH_USER);
 if (!localStorage.getItem('gh_repo'))   localStorage.setItem('gh_repo',   GH_REPO);
 if (!localStorage.getItem('gh_branch')) localStorage.setItem('gh_branch', GH_BRANCH);
+// Pre-store hardcoded password hash so all devices work without setup
+if (!localStorage.getItem('us_always_pass')) localStorage.setItem('us_always_pass', HARDCODED_HASH);
 
 async function hashPass(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str + 'us_always_salt_xo'));
@@ -1251,11 +1255,8 @@ if (isUnlocked()) {
 } else {
   const hasPass = !!localStorage.getItem(PASS_KEY);
   if (!hasPass) {
-    // First visit — hide login fields, open set-password modal directly
-    document.getElementById('lockBtn').style.display    = 'none';
-    document.getElementById('lockInput').style.display  = 'none';
-    document.getElementById('lockToggle').style.display = 'none';
-    document.getElementById('setPasswordModal').classList.add('open');
+    // No password in storage — use hardcoded hash (already pre-stored above)
+    // Nothing to show — passcode screen works immediately
   }
 
   // ── PASSCODE KEYPAD ──
@@ -1272,7 +1273,8 @@ if (isUnlocked()) {
     const val = passcodeEntered;
     if (val.length < 6) return;
     const hashed = await hashPass(val);
-    if (hashed === localStorage.getItem(PASS_KEY)) {
+    const storedHash = localStorage.getItem(PASS_KEY) || HARDCODED_HASH;
+    if (hashed === storedHash) {
       document.getElementById('lockError').textContent = '';
       sessionStorage.setItem('plain_pass_temp', val);
       unlockSite(val);
@@ -1317,9 +1319,7 @@ if (isUnlocked()) {
     document.getElementById('lockError').textContent = '';
   });
 
-  document.getElementById('lockSetupLink').addEventListener('click', () => {
-    document.getElementById('setPasswordModal').classList.add('open');
-  });
+  // Setup link removed — password is hardcoded
 
   updateDots();
 }
