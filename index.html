@@ -1032,7 +1032,32 @@ async function ghSaveData(data) {
 async function ghSavePhoto(filename, base64data, caption, date, tag) {
   const b64  = base64data.split(',')[1];
   const path = 'images/' + filename;
-  if (!ghReady()) return { localOnly: true, dataUrl: base64data, id: Date.now() + Math.random(), caption, date, tag };
+
+  // If token not ready, try to bootstrap from Gist using hardcoded password
+  if (!ghReady()) {
+    showToast('Connecting to GitHub…', 'saving', 10000);
+    try {
+      const data = await ghLoadDataPublic();
+      if (data && data.encryptedToken) {
+        const tok = await decryptToken(data.encryptedToken, HARDCODED_PASS);
+        if (tok) {
+          let gid = '';
+          if (data.encryptedGistId) gid = await decryptToken(data.encryptedGistId, HARDCODED_PASS) || '';
+          else if (data.gistId) gid = data.gistId;
+          storeToken(tok, gid);
+          // Merge loaded data
+          D = mergeDefaults(data, DEFAULT_DATA);
+        }
+      }
+    } catch(e) { /* continue to check again */ }
+
+    if (!ghReady()) {
+      const cfg = ghCfg();
+      showToast('No connection: token=' + (cfg.token?'yes':'NO') + ' user=' + (cfg.user||'none'), 'error', 8000);
+      return { localOnly: true, dataUrl: base64data, id: Date.now() + Math.random(), caption, date, tag };
+    }
+  }
+
   const MAX_RETRIES = 3;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
