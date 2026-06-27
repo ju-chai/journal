@@ -32,7 +32,7 @@ img{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;
 ::-webkit-scrollbar-thumb{background:var(--blush);border-radius:10px;}
 
 /* ── LOCK SCREEN ── */
-#lockScreen{position:fixed;inset:0;z-index:9999;background:var(--ivory);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;transition:opacity .6s ease,visibility .6s ease;}
+#lockScreen{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#fdf8f4 0%,#f9ede6 25%,#fdf3ef 50%,#f5e8e0 75%,#fdf8f4 100%);background-size:400% 400%;animation:gradientShift 12s ease infinite;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;transition:opacity .6s ease,visibility .6s ease;}
 #lockScreen.unlocked{opacity:0;visibility:hidden;pointer-events:none;}
 .lock-petals{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
 .lock-eyebrow{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--sage);margin-bottom:1rem;font-weight:400;}
@@ -57,10 +57,24 @@ img{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;
 .lock-hint a{color:var(--rose);text-decoration:none;cursor:pointer;}
 .lock-hint a:hover{text-decoration:underline;}
 @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-5px);}80%{transform:translateX(5px);}}
+
+/* ── PASSCODE ── */
+.passcode-dots{display:flex;gap:18px;justify-content:center;margin:1.5rem 0 .5rem;}
+.passcode-dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--rose);background:transparent;transition:background .15s ease,transform .1s ease;}
+.passcode-dot.filled{background:var(--rose);transform:scale(1.1);}
+.passcode-dot.shake{animation:shake .4s ease;}
+.passcode-error{font-size:12px;color:var(--rose);letter-spacing:.06em;height:18px;text-align:center;margin-bottom:.8rem;}
+.passcode-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:min(260px,80vw);margin:0 auto;}
+.passcode-key{width:72px;height:72px;border-radius:50%;border:1px solid rgba(201,133,122,.3);background:rgba(253,248,244,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .1s;margin:0 auto;-webkit-tap-highlight-color:transparent;}
+.passcode-key:active{background:rgba(201,133,122,.18);transform:scale(.94);}
+.passcode-key.empty{background:transparent;border:none;cursor:default;}
+.passcode-key-num{font-family:var(--sans);font-size:24px;font-weight:300;color:var(--walnut);line-height:1;}
+.passcode-key-letters{font-size:9px;letter-spacing:.12em;color:var(--muted);margin-top:2px;}
+.passcode-del{font-size:20px;color:var(--muted);}
 
 
 /* ── LOCK SCREEN ── */
-#lockScreen{position:fixed;inset:0;z-index:9999;background:var(--ivory);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;transition:opacity .6s ease,visibility .6s ease;}
+#lockScreen{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#fdf8f4 0%,#f9ede6 25%,#fdf3ef 50%,#f5e8e0 75%,#fdf8f4 100%);background-size:400% 400%;animation:gradientShift 12s ease infinite;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;transition:opacity .6s ease,visibility .6s ease;}
 #lockScreen.unlocked{opacity:0;visibility:hidden;pointer-events:none;}
 .lock-petals{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
 .lock-eyebrow{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--sage);margin-bottom:1rem;font-weight:400;}
@@ -85,6 +99,20 @@ img{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;
 .lock-hint a{color:var(--rose);text-decoration:none;cursor:pointer;}
 .lock-hint a:hover{text-decoration:underline;}
 @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-5px);}80%{transform:translateX(5px);}}
+
+/* ── PASSCODE ── */
+.passcode-dots{display:flex;gap:18px;justify-content:center;margin:1.5rem 0 .5rem;}
+.passcode-dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--rose);background:transparent;transition:background .15s ease,transform .1s ease;}
+.passcode-dot.filled{background:var(--rose);transform:scale(1.1);}
+.passcode-dot.shake{animation:shake .4s ease;}
+.passcode-error{font-size:12px;color:var(--rose);letter-spacing:.06em;height:18px;text-align:center;margin-bottom:.8rem;}
+.passcode-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:min(260px,80vw);margin:0 auto;}
+.passcode-key{width:72px;height:72px;border-radius:50%;border:1px solid rgba(201,133,122,.3);background:rgba(253,248,244,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .1s;margin:0 auto;-webkit-tap-highlight-color:transparent;}
+.passcode-key:active{background:rgba(201,133,122,.18);transform:scale(.94);}
+.passcode-key.empty{background:transparent;border:none;cursor:default;}
+.passcode-key-num{font-family:var(--sans);font-size:24px;font-weight:300;color:var(--walnut);line-height:1;}
+.passcode-key-letters{font-size:9px;letter-spacing:.12em;color:var(--muted);margin-top:2px;}
+.passcode-del{font-size:20px;color:var(--muted);}
 
 
 /* ── NAV ── */
@@ -511,17 +539,36 @@ footer p{font-size:12px;letter-spacing:.04em;}
   <div class="lock-petals" id="lockPetals"></div>
   <p class="lock-eyebrow">private · just for us</p>
   <h1 class="lock-title">us,<br><em>always</em> ♡</h1>
-  <p class="lock-sub">Enter the password to open your little world</p>
+  <p class="lock-sub">Enter your passcode</p>
   <div class="lock-divider"><div class="line"></div><div class="diamond"></div><div class="line"></div></div>
-  <div class="lock-form">
-    <div class="lock-input-wrap">
-      <input class="lock-input" id="lockInput" type="password" placeholder="our password" autocomplete="off" autocorrect="off" spellcheck="false"/>
-      <button class="lock-toggle" id="lockToggle" tabindex="-1" aria-label="Show/hide password">👁</button>
-    </div>
-    <div class="lock-error" id="lockError"></div>
-    <button class="lock-btn" id="lockBtn">Enter ♡</button>
-    <p class="lock-hint">First time? <a id="lockSetupLink">Set your password</a></p>
+  <!-- Passcode dots -->
+  <div class="passcode-dots" id="passcodeDots">
+    <div class="passcode-dot" id="pd0"></div>
+    <div class="passcode-dot" id="pd1"></div>
+    <div class="passcode-dot" id="pd2"></div>
+    <div class="passcode-dot" id="pd3"></div>
+    <div class="passcode-dot" id="pd4"></div>
+    <div class="passcode-dot" id="pd5"></div>
   </div>
+  <div class="passcode-error" id="lockError"></div>
+  <!-- Number pad -->
+  <div class="passcode-keypad">
+    <div class="passcode-key" data-n="1"><span class="passcode-key-num">1</span><span class="passcode-key-letters"></span></div>
+    <div class="passcode-key" data-n="2"><span class="passcode-key-num">2</span><span class="passcode-key-letters">ABC</span></div>
+    <div class="passcode-key" data-n="3"><span class="passcode-key-num">3</span><span class="passcode-key-letters">DEF</span></div>
+    <div class="passcode-key" data-n="4"><span class="passcode-key-num">4</span><span class="passcode-key-letters">GHI</span></div>
+    <div class="passcode-key" data-n="5"><span class="passcode-key-num">5</span><span class="passcode-key-letters">JKL</span></div>
+    <div class="passcode-key" data-n="6"><span class="passcode-key-num">6</span><span class="passcode-key-letters">MNO</span></div>
+    <div class="passcode-key" data-n="7"><span class="passcode-key-num">7</span><span class="passcode-key-letters">PQRS</span></div>
+    <div class="passcode-key" data-n="8"><span class="passcode-key-num">8</span><span class="passcode-key-letters">TUV</span></div>
+    <div class="passcode-key" data-n="9"><span class="passcode-key-num">9</span><span class="passcode-key-letters">WXYZ</span></div>
+    <div class="passcode-key empty"></div>
+    <div class="passcode-key" data-n="0"><span class="passcode-key-num">0</span></div>
+    <div class="passcode-key" id="passcodeDelBtn"><span class="passcode-del">⌫</span></div>
+  </div>
+  <!-- Hidden input still needed for set-password flow -->
+  <input id="lockInput" type="hidden" value=""/>
+  <p class="lock-hint" style="margin-top:1.5rem;">First time? <a id="lockSetupLink">Set your password</a></p>
 </div>
 
 <!-- SET PASSWORD MODAL -->
@@ -1207,30 +1254,58 @@ if (isUnlocked()) {
     document.getElementById('setPasswordModal').classList.add('open');
   }
 
-  async function tryUnlock() {
-    const val = document.getElementById('lockInput').value;
-    if (!val) return;
-    const hashed = await hashPass(val);
-    if (hashed === localStorage.getItem(PASS_KEY)) {
-      sessionStorage.setItem('plain_pass_temp', val);
-      unlockSite(val);
-    } else {
-      const inp = document.getElementById('lockInput');
-      inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake');
-      document.getElementById('lockError').textContent = 'Wrong password — try again';
-      inp.value = ''; inp.focus();
+  // ── PASSCODE KEYPAD ──
+  let passcodeEntered = '';
+
+  function updateDots() {
+    for (let i = 0; i < 6; i++) {
+      const dot = document.getElementById('pd' + i);
+      if (dot) dot.classList.toggle('filled', i < passcodeEntered.length);
     }
   }
 
-  document.getElementById('lockBtn').addEventListener('click', tryUnlock);
-  document.getElementById('lockInput').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
-  document.getElementById('lockToggle').addEventListener('click', () => {
-    const inp = document.getElementById('lockInput');
-    inp.type = inp.type === 'password' ? 'text' : 'password';
+  async function tryUnlock() {
+    const val = passcodeEntered;
+    if (val.length < 6) return;
+    const hashed = await hashPass(val);
+    if (hashed === localStorage.getItem(PASS_KEY)) {
+      document.getElementById('lockError').textContent = '';
+      sessionStorage.setItem('plain_pass_temp', val);
+      unlockSite(val);
+    } else {
+      document.querySelectorAll('.passcode-dot').forEach(d => {
+        d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake');
+        setTimeout(() => d.classList.remove('shake'), 400);
+      });
+      document.getElementById('lockError').textContent = 'Wrong passcode — try again';
+      setTimeout(() => {
+        passcodeEntered = '';
+        updateDots();
+        document.getElementById('lockError').textContent = '';
+      }, 700);
+    }
+  }
+
+  document.querySelectorAll('.passcode-key[data-n]').forEach(key => {
+    key.addEventListener('click', async () => {
+      if (passcodeEntered.length >= 6) return;
+      passcodeEntered += key.dataset.n;
+      updateDots();
+      if (passcodeEntered.length === 6) await tryUnlock();
+    });
   });
+
+  document.getElementById('passcodeDelBtn').addEventListener('click', () => {
+    passcodeEntered = passcodeEntered.slice(0, -1);
+    updateDots();
+    document.getElementById('lockError').textContent = '';
+  });
+
   document.getElementById('lockSetupLink').addEventListener('click', () => {
     document.getElementById('setPasswordModal').classList.add('open');
   });
+
+  updateDots();
 }
 
 // ═══════════════════════════════════════════════════════
