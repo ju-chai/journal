@@ -508,6 +508,39 @@ footer p{font-size:12px;letter-spacing:.04em;}
 #toast.error::before{content:'✗  ';}
 #toast.saving::before{content:'⏳  ';}
 
+/* ── PULL TO REFRESH ── */
+#ptrIndicator{
+  position:fixed;
+  top:0;left:0;right:0;
+  z-index:9000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  height:0;
+  overflow:hidden;
+  background:linear-gradient(to bottom,var(--blush),transparent);
+  transition:height .2s ease;
+  font-size:12px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--rose);
+  pointer-events:none;
+}
+#ptrIndicator.visible{height:56px;}
+#ptrIndicator.refreshing{height:56px;}
+.ptr-spinner{
+  width:16px;height:16px;
+  border:2px solid var(--blush);
+  border-top-color:var(--rose);
+  border-radius:50%;
+  display:none;
+}
+#ptrIndicator.refreshing .ptr-spinner{display:block;animation:spin .7s linear infinite;}
+#ptrIndicator.refreshing .ptr-arrow{display:none;}
+.ptr-arrow{font-size:16px;transition:transform .2s ease;}
+.ptr-arrow.ready{transform:rotate(180deg);}
+
 /* ── FADE-IN ── */
 .fade-in{opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease;}
 .fade-in.visible{opacity:1;transform:none;}
@@ -591,6 +624,13 @@ footer p{font-size:12px;letter-spacing:.04em;}
   </div>
 </div>
 
+
+<!-- PULL TO REFRESH -->
+<div id="ptrIndicator">
+  <span class="ptr-arrow" id="ptrArrow">↓</span>
+  <div class="ptr-spinner"></div>
+  <span id="ptrText">Pull to refresh</span>
+</div>
 
 <!-- EDIT BANNER -->
 <div id="editBanner">✏️ Edit mode — click any text to edit · click Done to save to GitHub</div>
@@ -2097,6 +2137,61 @@ document.getElementById('lbDelete').addEventListener('click', async () => {
   lbIndex = Math.min(lbIndex, lbAlbumPhotos.length - 1);
   showLbSlide(lbAlbumPhotos, lbIndex);
 });
+
+// ═══════════════════════════════════════════════════════
+//  PULL TO REFRESH
+// ═══════════════════════════════════════════════════════
+(function initPullToRefresh() {
+  const THRESHOLD  = 80;  // px to pull before triggering refresh
+  const indicator  = document.getElementById('ptrIndicator');
+  const arrow      = document.getElementById('ptrArrow');
+  const ptrText    = document.getElementById('ptrText');
+  let startY       = 0;
+  let pulling      = false;
+  let refreshing   = false;
+
+  document.addEventListener('touchstart', e => {
+    // Only activate when scrolled to very top
+    if (window.scrollY === 0 && e.touches.length === 1) {
+      startY  = e.touches[0].clientY;
+      pulling = true;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!pulling || refreshing) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0) { pulling = false; return; }
+    const progress = Math.min(dy / THRESHOLD, 1);
+    indicator.classList.add('visible');
+    indicator.style.height = Math.min(dy * 0.5, 56) + 'px';
+    if (progress >= 1) {
+      arrow.classList.add('ready');
+      ptrText.textContent = 'Release to refresh';
+    } else {
+      arrow.classList.remove('ready');
+      ptrText.textContent = 'Pull to refresh';
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (!pulling || refreshing) return;
+    pulling = false;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (dy >= THRESHOLD) {
+      // Trigger refresh
+      refreshing = true;
+      indicator.classList.add('refreshing');
+      ptrText.textContent = 'Refreshing…';
+      setTimeout(() => { window.location.reload(); }, 500);
+    } else {
+      // Reset
+      indicator.classList.remove('visible');
+      indicator.style.height = '';
+      arrow.classList.remove('ready');
+    }
+  }, { passive: true });
+})();
 
 // ═══════════════════════════════════════════════════════
 //  SCROLL FADE-IN
