@@ -784,7 +784,7 @@ footer p{font-size:12px;letter-spacing:.04em;}
 
 // ── AUTO CACHE BUSTER ──────────────────────────────────────────
 // Bump SITE_VERSION any time you want all devices to force-refresh.
-const SITE_VERSION = '10';
+const SITE_VERSION = '11';
 if (localStorage.getItem('site_version') !== SITE_VERSION) {
   localStorage.removeItem('siteData');
   localStorage.setItem('site_version', SITE_VERSION);
@@ -1161,10 +1161,11 @@ if (!localStorage.getItem('gh_user'))    localStorage.setItem('gh_user',    GH_U
 if (!localStorage.getItem('gh_repo'))    localStorage.setItem('gh_repo',    GH_REPO);
 if (!localStorage.getItem('gh_branch'))  localStorage.setItem('gh_branch',  GH_BRANCH);
 if (!localStorage.getItem('gh_gist_id')) localStorage.setItem('gh_gist_id', GH_GIST_ID);
-_ghGistId = GH_GIST_ID; // always set in memory
-_ghToken  = GH_TOKEN;   // always set in memory from encoded value
-// Token is decoded from GH_TOKEN_ENC — no localStorage needed
-// Pre-store hardcoded password hash so all devices work without setup
+_ghGistId = GH_GIST_ID;
+_ghToken  = GH_TOKEN;
+// Always remove any stale token from storage — GH_TOKEN is the source of truth
+localStorage.removeItem('gh_token');
+sessionStorage.removeItem('gh_token_s');
 if (!localStorage.getItem('us_always_pass')) localStorage.setItem('us_always_pass', HARDCODED_HASH);
 
 async function hashPass(str) {
