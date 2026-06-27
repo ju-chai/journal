@@ -1107,10 +1107,12 @@ D = mergeDefaults(D, DEFAULT_DATA);
 // ═══════════════════════════════════════════════════════
 //  LOCK SCREEN
 // ═══════════════════════════════════════════════════════
-const PASS_KEY    = 'us_always_pass';
-const SESSION_KEY = 'us_always_session';
-// Hardcoded password hash — change '112423' in the HTML to update the passcode
-const HARDCODED_HASH = '85ba58b8131b577f3499c81a6a8ed839f9492471b704a4b5e2bdeb2125bfc238';
+const PASS_KEY         = 'us_always_pass';
+const SESSION_KEY      = 'us_always_session';
+// Hardcoded password — change this to update the passcode
+// HARDCODED_PASS is used to decrypt the token on every device automatically
+const HARDCODED_PASS   = '112423';
+const HARDCODED_HASH   = '85ba58b8131b577f3499c81a6a8ed839f9492471b704a4b5e2bdeb2125bfc238';
 // Pre-populate repo config in localStorage
 if (!localStorage.getItem('gh_user'))   localStorage.setItem('gh_user',   GH_USER);
 if (!localStorage.getItem('gh_repo'))   localStorage.setItem('gh_repo',   GH_REPO);
@@ -1155,8 +1157,10 @@ async function decryptToken(encrypted, password) {
 
 async function unlockSite(plainPassword) {
   sessionStorage.setItem(SESSION_KEY, 'yes');
-  // Store plain password in session so init() can use it to decrypt the token
-  if (plainPassword) sessionStorage.setItem('plain_pass_temp', plainPassword);
+  // Always use hardcoded pass as fallback so token decryption works on all devices
+  const plainPassword2 = plainPassword || HARDCODED_PASS;
+  sessionStorage.setItem('plain_pass_temp', plainPassword2);
+  plainPassword = plainPassword2;
 
   // Step 1: try to decrypt token from whatever D we have locally cached
   if (plainPassword && D.encryptedToken) {
@@ -1276,8 +1280,7 @@ if (isUnlocked()) {
     const storedHash = localStorage.getItem(PASS_KEY) || HARDCODED_HASH;
     if (hashed === storedHash) {
       document.getElementById('lockError').textContent = '';
-      sessionStorage.setItem('plain_pass_temp', val);
-      unlockSite(val);
+      unlockSite(HARDCODED_PASS);
     } else {
       document.querySelectorAll('.passcode-dot').forEach(d => {
         d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake');
@@ -1362,7 +1365,7 @@ async function init() {
       }
       // If loaded data has an encrypted token, decrypt it using the session password
       if (D.encryptedToken && !sessionStorage.getItem('gh_token_s')) {
-        const pp = sessionStorage.getItem('plain_pass_temp') || '';
+        const pp = sessionStorage.getItem('plain_pass_temp') || HARDCODED_PASS;
         if (pp) {
           const tok = await decryptToken(D.encryptedToken, pp);
           if (tok) {
@@ -1382,7 +1385,7 @@ async function init() {
       lsSave('siteData', D);
       // If it has an encrypted token, decrypt it with the session password
       if (D.encryptedToken) {
-        const pp = sessionStorage.getItem('plain_pass_temp') || '';
+        const pp = sessionStorage.getItem('plain_pass_temp') || HARDCODED_PASS;
         if (pp) {
           const tok = await decryptToken(D.encryptedToken, pp);
           if (tok) {
