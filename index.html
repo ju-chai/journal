@@ -807,7 +807,7 @@ function ghCfg() {
     user:   localStorage.getItem('gh_user')   || GH_USER,
     repo:   localStorage.getItem('gh_repo')   || GH_REPO,
     branch: localStorage.getItem('gh_branch') || GH_BRANCH,
-    token:  _ghToken || sessionStorage.getItem('gh_token_s') || localStorage.getItem('gh_token') || '',
+    token:  _ghToken || sessionStorage.getItem('gh_token_s') || localStorage.getItem('gh_token') || GH_TOKEN,
     gistId: _ghGistId || localStorage.getItem('gh_gist_id') || sessionStorage.getItem('gh_gist_id_s') || (typeof D !== 'undefined' && D.gistId) || GH_GIST_ID
   };
 }
@@ -941,6 +941,7 @@ const GH_USER    = localStorage.getItem('gh_user')    || 'ju-chai';
 const GH_REPO    = localStorage.getItem('gh_repo')    || 'journal';
 const GH_BRANCH  = localStorage.getItem('gh_branch')  || 'main';
 const GH_GIST_ID = localStorage.getItem('gh_gist_id') || 'd5b4fd4febe307dba75bacde06622808';
+const GH_TOKEN   = localStorage.getItem('gh_token')   || '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';
 
 async function ghLoadDataPublic() {
   // Step 1: If we already have gistId, load directly from Gist
@@ -1148,7 +1149,9 @@ if (!localStorage.getItem('gh_user'))    localStorage.setItem('gh_user',    GH_U
 if (!localStorage.getItem('gh_repo'))    localStorage.setItem('gh_repo',    GH_REPO);
 if (!localStorage.getItem('gh_branch'))  localStorage.setItem('gh_branch',  GH_BRANCH);
 if (!localStorage.getItem('gh_gist_id')) localStorage.setItem('gh_gist_id', GH_GIST_ID);
+if (!localStorage.getItem('gh_token'))   localStorage.setItem('gh_token',   GH_TOKEN);
 _ghGistId = GH_GIST_ID; // always set in memory
+_ghToken  = GH_TOKEN;   // always set in memory
 // Pre-store hardcoded password hash so all devices work without setup
 if (!localStorage.getItem('us_always_pass')) localStorage.setItem('us_always_pass', HARDCODED_HASH);
 
